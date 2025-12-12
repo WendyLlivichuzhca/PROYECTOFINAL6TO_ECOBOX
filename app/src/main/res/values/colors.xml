@@ -5,16 +5,20 @@
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
+
     <color name="red_alert">#EF5350</color>
     <color name="orange_alert">#FFA726</color>
-    <color name="white">#FFFFFF</color>
     <color name="eco_primary_dark">#1B5E20</color>
     <color name="eco_background">#F9FBE7</color>
-    <color name="eco_primary">#2E7D32</color>
     <color name="eco_border">#A5D6A7</color>
     <color name="gray_text">#757575</color>
-
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="eco_primary">#4CAF50</color>
+    <color name="gray_100">#F5F5F5</color>
+    <color name="gray_200">#EEEEEE</color>
+    <color name="gray_500">#9E9E9E</color>
+    <color name="gray_600">#757575</color>
 
     <!-- Colores de Estado -->
     <color name="status_critical">#EF5350</color>
@@ -25,4 +29,70 @@
     <color name="white_20">#33FFFFFF</color>
     <color name="white_90">#E6FFFFFF</color>
     <color name="black_text">#212121</color>
+
+    <color name="bg_cream">#F9FBE7</color>
+    <color name="green_primary">#2E7D32</color>
+    <color name="green_dark">#1B5E20</color>
+    <color name="text_dark">#212121</color>
+    <color name="text_gray">#757575</color>
+
+    <color name="status_healthy_light">#E8F5E9</color>
+    <color name="status_warning_light">#FFF3E0</color>
+    <color name="status_critical_light">#FFEBEE</color>
+
+    <color name="sensor_humidity_bg">#A5D6A7</color>
+    <color name="sensor_light_bg">#FFE0B2</color>
+    <color name="sensor_light_icon">#FFA726</color>
+    <color name="sensor_temp_bg">#B2EBF2</color>
+    <color name="sensor_temp_icon">#25C6DA</color>
+    <color name="sensor_status_bg">#E1BEE7</color>
+    <color name="sensor_status_icon">#9C27B0</color>
+    <color name="red_error">#EF5350</color>
+
+    <color name="green_header">#2E7D32</color>
+
+    <color name="alert_red_bg">#EF5350</color>
+    <color name="alert_red_icon_bg">#E57373</color>
+    <color name="alert_orange_bg">#FFA726</color>
+    <color name="alert_orange_icon_bg">#FFB74D</color>
+    <color name="btn_grey">#E0E0E0</color>
+    <color name="chart_grid">#E0E0E0</color>
+
+    <color name="sensor_blue_bg">#E1F5FE</color>
+    <color name="sensor_blue">#29B6F6</color>
+    <color name="sensor_purple_bg">#F3E5F5</color>
+    <color name="sensor_purple">#AB47BC</color>
+    <color name="sensor_green_bg">#E8F5E9</color>
+    <color name="sensor_green">#66BB6A</color>
+    <color name="sensor_orange_bg">#FFF3E0</color>
+    <color name="sensor_orange">#FFA726</color>
+    <color name="bg_tabs">#F5F5F5</color>
+    <color name="white_translucent">#33FFFFFF</color>
+
+
+    <!-- Nuevos colores para notificaciones -->
+
+    <!-- Colores de texto -->
+
+    <color name="text_light">#9E9E9E</color>     <!-- Gris claro para texto terciario/hora -->
+    <color name="text_white">#FFFFFF</color>     <!-- Blanco para texto sobre fondos oscuros -->
+
+
+    <!-- Colores principales de la app -->
+    <color name="eco_secondary">#81C784</color>  <!-- Verde claro -->
+
+
+    <!-- Colores para notificaciones -->
+    <color name="notification_critical_bg">#FFEBEE</color>
+    <color name="notification_critical_border">#FFCDD2</color>
+
+    <color name="notification_warning_bg">#FFF3E0</color>
+    <color name="notification_warning_border">#FFCC80</color>
+
+    <color name="notification_info_bg">#E3F2FD</color>
+    <color name="notification_info_border">#90CAF9</color>
+
+    <color name="notification_default_bg">#F5F5F5</color>
+    <color name="notification_default_border">#E0E0E0</color>
+
 </resources>

@@ -59,6 +59,8 @@ dependencies {
     // Tus librerías de conexión y correo (Sintaxis Kotlin con paréntesis y comillas dobles)
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("mysql:mysql-connector-java:5.1.49")
+    implementation ("com.google.android.material:material:1.11.0")
+
     implementation("com.sun.mail:android-mail:1.6.7")
     implementation("com.sun.mail:android-activation:1.6.7")
     // Retrofit (Cliente HTTP)
@@ -67,4 +69,9 @@ dependencies {
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
     // Corutinas (Para no bloquear la interfaz de usuario)
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.11.0") // Esto incluye CardView
+    implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+
 }
