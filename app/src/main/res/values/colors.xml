@@ -59,15 +59,19 @@
     <color name="chart_grid">#E0E0E0</color>
 
     <color name="sensor_blue_bg">#E1F5FE</color>
-    <color name="sensor_blue">#29B6F6</color>
     <color name="sensor_purple_bg">#F3E5F5</color>
-    <color name="sensor_purple">#AB47BC</color>
     <color name="sensor_green_bg">#E8F5E9</color>
-    <color name="sensor_green">#66BB6A</color>
     <color name="sensor_orange_bg">#FFF3E0</color>
-    <color name="sensor_orange">#FFA726</color>
     <color name="bg_tabs">#F5F5F5</color>
     <color name="white_translucent">#33FFFFFF</color>
+    <color name="sensor_yellow">#FFC107</color>
+    <color name="sensor_red">#F44336</color>
+    <color name="sensor_cyan">#00BCD4</color>
+    <color name="sensor_gray">#9E9E9E</color>
+    <color name="sensor_green">#4CAF50</color>
+    <color name="sensor_orange">#FF9800</color>
+    <color name="sensor_blue">#2196F3</color>
+    <color name="sensor_purple">#9C27B0</color>
 
 
     <!-- Nuevos colores para notificaciones -->

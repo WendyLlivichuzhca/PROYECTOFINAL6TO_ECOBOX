@@ -1,6 +1,7 @@
 package com.example.proyectofinal6to_ecobox.data.dao
 
 import android.util.Log
+import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.model.Planta
 import java.sql.ResultSet
 import java.util.ArrayList
@@ -1081,5 +1082,257 @@ object PlantaDao {
             horas <= 168 -> listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
             else -> listOf("01", "05", "10", "15", "20", "25", "30")
         }.take(puntos)
+    }
+
+    // =========================================================================
+// FUNCIONES ESPECÍFICAS PARA TU DISEÑO DE SENSORES
+// =========================================================================
+
+    /**
+     * Obtiene sensores de MI familia para mostrar en tu RecyclerView
+     * Retorna List<Map> con las claves exactas que necesita tu item_sensor.xml
+     */
+    fun obtenerSensoresMiFamiliaParaUI(userId: Long): List<Map<String, Any>> {
+        val sensores = mutableListOf<Map<String, Any>>()
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                // Obtener ID de mi familia
+                val familiaId = obtenerFamiliaIdDelUsuario(userId)
+                if (familiaId == -1L) {
+                    Log.w("SensoresUI", "Usuario sin familia")
+                    return sensores
+                }
+
+                val sql = """
+                SELECT 
+                    ms.id as id,
+                    ms.nombre as nombre_sensor,
+                    ms.ubicacion,
+                    ts.nombre as tipo_sensor,
+                    ts.unidad_medida,
+                    es.nombre as estado,
+                    es.id as estado_id,
+                    p.nombre as planta_nombre,
+                    COALESCE(m.valor, 0.0) as valor_actual,
+                    COALESCE(DATE_FORMAT(m.fecha, '%H:%i'), '--:--') as ultima_hora
+                FROM main_sensor ms
+                INNER JOIN tipo_sensor ts ON ms.tipo_sensor_id = ts.id
+                INNER JOIN estado_sensor es ON ms.estado_sensor_id = es.id
+                INNER JOIN planta p ON ms.planta_id = p.id
+                LEFT JOIN (
+                    SELECT m1.* 
+                    FROM medicion m1
+                    INNER JOIN (
+                        SELECT sensor_id, MAX(fecha) as max_fecha
+                        FROM medicion
+                        GROUP BY sensor_id
+                    ) m2 ON m1.sensor_id = m2.sensor_id AND m1.fecha = m2.max_fecha
+                ) m ON ms.id = m.sensor_id
+                WHERE p.familia_id = ?
+                  AND ms.activo = 1
+                ORDER BY p.nombre, ms.nombre
+            """
+
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, familiaId)
+                val rs = stmt.executeQuery()
+
+                while (rs.next()) {
+                    val estadoId = rs.getInt("estado_id")
+                    val tipo = rs.getString("tipo_sensor") ?: ""
+                    val valor = rs.getFloat("valor_actual")
+                    val unidad = rs.getString("unidad_medida") ?: ""
+
+                    // Determinar color y estado según tu diseño
+                    val (colorRes, estadoTexto, progress) = determinarEstadoUI(estadoId, tipo, valor)
+
+                    // Determinar icono
+                    val (iconRes, bgColorRes) = determinarIconoYFondo(tipo)
+
+                    val sensor = mapOf(
+                        // Para tvSensorName
+                        "nombre" to (rs.getString("nombre_sensor") ?: "Sensor"),
+
+                        // Para tvSensorLocation
+                        "ubicacion" to (rs.getString("ubicacion") ?: "Sin ubicación"),
+
+                        // Para tvSensorValue - formateado bonito
+                        "valor" to formatValor(valor, unidad),
+
+                        // Para tvSensorStatus
+                        "estado" to estadoTexto,
+
+                        // Para progressSensor
+                        "progress" to progress,
+
+                        // Para ivSensorIcon
+                        "icono_res" to iconRes,
+
+                        // Para containerIcon background
+                        "bg_color_res" to bgColorRes,
+
+                        // Para tvSensorStatus color
+                        "color_res" to colorRes,
+
+                        // Datos adicionales si los necesitas
+                        "tipo" to tipo,
+                        "planta" to (rs.getString("planta_nombre") ?: ""),
+                        "hora" to (rs.getString("ultima_hora") ?: "--:--"),
+                        "estado_id" to estadoId,
+                        "valor_raw" to valor,
+                        "unidad" to unidad
+                    )
+                    sensores.add(sensor)
+                }
+
+                rs.close()
+                stmt.close()
+                conexion.close()
+
+                Log.d("SensoresUI", "Encontrados ${sensores.size} sensores para UI")
+            }
+        } catch (e: Exception) {
+            Log.e("SensoresUI", "Error: ${e.message}", e)
+        }
+
+        return sensores
+    }
+
+    /**
+     * Obtiene los conteos EXACTOS para tus 3 tarjetas de estadísticas
+     */
+    fun obtenerConteosParaTarjetas(userId: Long): Triple<Int, Int, Int> {
+        var activos = 0
+        var optimos = 0
+        var alerta = 0
+
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                val familiaId = obtenerFamiliaIdDelUsuario(userId)
+                if (familiaId == -1L) return Triple(0, 0, 0)
+
+                // Contar TOTAL de sensores activos (primera tarjeta)
+                val sqlTotal = """
+                SELECT COUNT(*) as total
+                FROM main_sensor ms
+                INNER JOIN planta p ON ms.planta_id = p.id
+                WHERE p.familia_id = ?
+                  AND ms.activo = 1
+            """
+
+                val stmtTotal = conexion.prepareStatement(sqlTotal)
+                stmtTotal.setLong(1, familiaId)
+                val rsTotal = stmtTotal.executeQuery()
+
+                if (rsTotal.next()) {
+                    activos = rsTotal.getInt("total")
+                }
+                rsTotal.close()
+                stmtTotal.close()
+
+                // De esos activos, contar cuántos están óptimos y en alerta
+                if (activos > 0) {
+                    val sensores = obtenerSensoresMiFamiliaParaUI(userId)
+
+                    optimos = sensores.count { sensor ->
+                        val estadoId = sensor["estado_id"] as? Int ?: 0
+                        estadoId == 1 && (sensor["estado"] as? String == "Óptimo")
+                    }
+
+                    alerta = sensores.count { sensor ->
+                        val estadoId = sensor["estado_id"] as? Int ?: 0
+                        estadoId != 1 || (sensor["estado"] as? String != "Óptimo")
+                    }
+                }
+
+                conexion.close()
+
+                Log.d("ConteosUI", "Tarjetas: Activos=$activos, Óptimos=$optimos, Alerta=$alerta")
+            }
+        } catch (e: Exception) {
+            Log.e("ConteosUI", "Error: ${e.message}", e)
+        }
+
+        return Triple(activos, optimos, alerta)
+    }
+
+// =========================================================================
+// FUNCIONES AUXILIARES ESPECÍFICAS
+// =========================================================================
+
+    /**
+     * Determina el estado UI según tu diseño (color, texto, progreso)
+     */
+    private fun determinarEstadoUI(estadoId: Int, tipo: String, valor: Float): Triple<Int, String, Int> {
+        return when {
+            estadoId == 4 -> Triple(R.color.sensor_red, "Error", 0)
+            estadoId == 3 -> Triple(R.color.sensor_orange, "Mantenimiento", 0)
+            estadoId == 1 -> {
+                if (esValorOptimoUI(tipo, valor)) {
+                    Triple(R.color.sensor_green, "Óptimo", calcularProgress(tipo, valor))
+                } else {
+                    Triple(R.color.sensor_yellow, "Advertencia", calcularProgress(tipo, valor))
+                }
+            }
+            else -> Triple(R.color.text_gray, "Inactivo", 0)
+        }
+    }
+
+    /**
+     * Verifica si el valor es óptimo según rangos estándar
+     */
+    private fun esValorOptimoUI(tipo: String, valor: Float): Boolean {
+        return when {
+            tipo.contains("Humedad Suelo") -> valor in 50f..80f
+            tipo.contains("Humedad Aire") -> valor in 40f..70f
+            tipo.contains("Temperatura") -> valor in 18f..28f
+            tipo.contains("Luz") -> valor > 300f
+            tipo.contains("pH") -> valor in 6f..7f
+            else -> true
+        }
+    }
+
+    /**
+     * Calcula el progreso para la barra (0-100)
+     */
+    private fun calcularProgress(tipo: String, valor: Float): Int {
+        return when {
+            tipo.contains("Humedad") -> valor.toInt().coerceIn(0, 100)
+            tipo.contains("Temperatura") -> ((valor - 10) / 30 * 100).toInt().coerceIn(0, 100)
+            tipo.contains("Luz") -> (valor / 2000 * 100).toInt().coerceIn(0, 100)
+            tipo.contains("pH") -> ((valor - 4) / 6 * 100).toInt().coerceIn(0, 100)
+            else -> 50
+        }
+    }
+
+    /**
+     * Determina icono y color de fondo según tipo de sensor
+     */
+    private fun determinarIconoYFondo(tipo: String): Pair<Int, Int> {
+        return when {
+            tipo.contains("Temperatura") -> Pair(R.drawable.ic_temp, R.drawable.bg_icon_sensor_red)
+            tipo.contains("Humedad Suelo") -> Pair(R.drawable.ic_droplet, R.drawable.bg_icon_sensor_blue)
+            tipo.contains("Humedad Aire") -> Pair(R.drawable.ic_air, R.drawable.bg_icon_sensor_cyan)
+            tipo.contains("Luz") -> Pair(R.drawable.ic_sun, R.drawable.bg_icon_sensor_yellow)
+            tipo.contains("pH") -> Pair(R.drawable.ic_ph, R.drawable.bg_icon_sensor_purple)
+            else -> Pair(R.drawable.ic_sensor_default, R.drawable.bg_icon_sensor_gray)
+        }
+    }
+
+    /**
+     * Formatea el valor para mostrar (ej: "75%", "25.5°C")
+     */
+    private fun formatValor(valor: Float, unidad: String): String {
+        return when (unidad) {
+            "%" -> "${valor.toInt()}%"
+            "°C" -> String.format("%.1f°C", valor)
+            "lux" -> "${valor.toInt()} lux"
+            "pH" -> String.format("%.1f pH", valor)
+            else -> String.format("%.1f", valor)
+        }
     }
 }
