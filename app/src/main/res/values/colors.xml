@@ -82,4 +82,12 @@
     <color name="status_healthy_dark">#047857</color>
     <color name="status_warning_dark">#B45309</color>
     <color name="status_critical_dark">#B91C1C</color>
+    <color name="brand_green">#2D5A40</color>
+    <color name="alert_critical_bg">#FEE2E2</color>
+    <color name="alert_critical_text">#DC2626</color>
+    <color name="alert_warning_bg">#FEF3C7</color>
+    <color name="alert_warning_text">#D97706</color>
+    <color name="alert_info_bg">#DBEAFE</color>
+    <color name="alert_info_text">#2563EB</color>
+    <color name="text_secondary">#6B7280</color>
 </resources>
