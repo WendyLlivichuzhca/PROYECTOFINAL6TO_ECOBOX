@@ -38,7 +38,7 @@
 
         <!-- Login -->
         <activity
-            android:name=".presentacion.ui.LoginActivity"
+            android:name=".presentacion.ui.WelcomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -97,6 +97,10 @@
         <activity android:name=".presentacion.ui.AlertsActivity" />
 
         <activity android:name=".presentacion.ui.HistoryActivity" />
+        <activity android:name=".presentacion.ui.LoginActivity" />
+        <activity
+            android:name=".presentacion.ui.AllEventsActivity"
+            android:exported="false" />
 
     </application>
 </manifest>

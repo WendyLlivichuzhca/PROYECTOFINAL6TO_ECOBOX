@@ -72,6 +72,10 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0") // Esto incluye CardView
     implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation ("com.airbnb.android:lottie:6.1.0")
+// Material Design Components (for Cards, Buttons, Switches, CoordinatorLayout)
+    implementation ("com.google.android.material:material:1.9.0")
 
-
+    // MPAndroidChart (for com.github.mikephil.charting.charts.LineChart)
+    implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
 }

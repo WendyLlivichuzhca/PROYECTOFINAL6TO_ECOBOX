@@ -1,60 +1,69 @@
 package com.example.proyectofinal6to_ecobox.presentacion.ui
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
+import android.text.format.DateUtils
 import android.util.Log
 import android.view.View
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao.DataPointDAO
 import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.formatter.ValueFormatter
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class HistoryActivity : AppCompatActivity() {
 
+    // UI Components
+    private lateinit var btnBack: ImageButton
     private lateinit var lineChart: LineChart
     private lateinit var tvHumidityAvg: TextView
     private lateinit var tvTempAvg: TextView
     private lateinit var tvLightAvg: TextView
 
-    // Botones de periodo
+    // Period Selectors
     private lateinit var btn24h: TextView
     private lateinit var btn7d: TextView
     private lateinit var btn30d: TextView
 
-    // Botones de plantas
-    private lateinit var plantsContainer: LinearLayout
+    // Plant Selector (NUEVO: ChipGroup)
+    private lateinit var chipGroupPlants: ChipGroup
 
-    // Eventos
-    private lateinit var event1: CardView
-    private lateinit var event2: CardView
-    private lateinit var event3: CardView
+    // Events Containers (Includes)
+    private lateinit var event1: View
+    private lateinit var event2: View
+    private lateinit var event3: View
 
-    // Listas
-    private val plantButtons = mutableListOf<TextView>()
+    // Data Management
     private var selectedPeriod = 24
-    private var selectedPlantId: Long = -1 // -1 para "Todas las plantas"
-    private var userId: Long = 1 // Obtener del SharedPreferences/Login
+    private var selectedPlantId: Long = -1 // -1 = Todas
+    private var userId: Long = 1
     private var plantasFamilia = mutableListOf<PlantaDao.PlantaConDatos>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_history)
 
-        // 1. Obtener usuario de sesión
+        // Configuración de Status Bar Transparente (Opcional, si no lo hiciste en themes)
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        window.statusBarColor = Color.TRANSPARENT
+
         val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
         userId = prefs.getLong("user_id", -1)
 
@@ -70,423 +79,310 @@ class HistoryActivity : AppCompatActivity() {
     }
 
     private fun initViews() {
+        btnBack = findViewById(R.id.btnBack)
         lineChart = findViewById(R.id.lineChart)
+
         tvHumidityAvg = findViewById(R.id.tvHumidityAvg)
         tvTempAvg = findViewById(R.id.tvTempAvg)
         tvLightAvg = findViewById(R.id.tvLightAvg)
 
-        // Period buttons
         btn24h = findViewById(R.id.btn24h)
         btn7d = findViewById(R.id.btn7d)
         btn30d = findViewById(R.id.btn30d)
 
-        // Plant container
-        plantsContainer = findViewById(R.id.plantsContainer)
+        // CAMBIO: Usamos el ChipGroup del XML
+        chipGroupPlants = findViewById(R.id.chipGroupPlants)
 
-        // Event cards
+        // Referencias a los layouts incluidos (item_event)
         event1 = findViewById(R.id.event1)
         event2 = findViewById(R.id.event2)
         event3 = findViewById(R.id.event3)
     }
 
     private fun setupClickListeners() {
-        // Listeners para periodos
-        btn24h.setOnClickListener {
-            selectedPeriod = 24
-            updatePeriodSelection()
-            loadHistoryData()
-        }
+        btnBack.setOnClickListener { finish() }
 
-        btn7d.setOnClickListener {
-            selectedPeriod = 168 // 24 * 7
-            updatePeriodSelection()
-            loadHistoryData()
-        }
+        btn24h.setOnClickListener { changePeriod(24, btn24h) }
+        btn7d.setOnClickListener { changePeriod(168, btn7d) }   // 7 días
+        btn30d.setOnClickListener { changePeriod(720, btn30d) } // 30 días
 
-        btn30d.setOnClickListener {
-            selectedPeriod = 720 // 24 * 30
-            updatePeriodSelection()
-            loadHistoryData()
+        // Listener para el botón "Ver todo" eventos
+        findViewById<TextView>(R.id.btnSeeAllEvents).setOnClickListener {
+            val intent = Intent(this, AllEventsActivity::class.java)
+            intent.putExtra("USER_ID", userId) // Pasamos el ID para cargar los datos allá
+            startActivity(intent)
         }
     }
 
-    private fun updatePeriodSelection() {
-        val selectedBg = ContextCompat.getDrawable(this, R.drawable.bg_button_selected)
-        val normalBg = ContextCompat.getDrawable(this, android.R.color.transparent)
-        val selectedTextColor = ContextCompat.getColor(this, android.R.color.white)
-        val normalTextColor = ContextCompat.getColor(this, R.color.text_gray)
+    private fun changePeriod(periodHours: Int, selectedView: TextView) {
+        if (selectedPeriod == periodHours) return
 
-        // Reset all
-        btn24h.background = normalBg
-        btn24h.setTextColor(normalTextColor)
-        btn7d.background = normalBg
-        btn7d.setTextColor(normalTextColor)
-        btn30d.background = normalBg
-        btn30d.setTextColor(normalTextColor)
+        selectedPeriod = periodHours
+        updatePeriodUI(selectedView)
+        loadHistoryData()
+    }
 
-        // Set selected
-        when (selectedPeriod) {
-            24 -> {
-                btn24h.background = selectedBg
-                btn24h.setTextColor(selectedTextColor)
-            }
-            168 -> {
-                btn7d.background = selectedBg
-                btn7d.setTextColor(selectedTextColor)
-            }
-            720 -> {
-                btn30d.background = selectedBg
-                btn30d.setTextColor(selectedTextColor)
-            }
+    private fun updatePeriodUI(selectedView: TextView) {
+        // Reset styles
+        val defaultColor = Color.parseColor("#9CA3AF") // Gris
+        val selectedColor = Color.WHITE
+        val transparent = Color.TRANSPARENT
+        val selectedBg = ContextCompat.getDrawable(this, R.drawable.bg_toggle_selected)
+
+        listOf(btn24h, btn7d, btn30d).forEach { btn ->
+            btn.background = null // O transparente
+            btn.setBackgroundColor(transparent)
+            btn.setTextColor(defaultColor)
         }
+
+        // Set active
+        selectedView.background = selectedBg
+        selectedView.setTextColor(selectedColor)
     }
 
     private fun loadPlantasFamilia() {
         Thread {
             try {
-                // Obtener plantas de mi familia
                 plantasFamilia = PlantaDao.obtenerPlantasFamiliaConDatos(userId).toMutableList()
-
                 runOnUiThread {
-                    createPlantButtons()
-                    // Seleccionar "Todas" por defecto
-                    if (plantButtons.isNotEmpty()) {
-                        selectPlantButton(plantButtons[0])
-                        loadHistoryData() // Cargar datos iniciales
-                    } else {
-                        // No hay plantas en la familia
-                        showNoPlantsMessage()
-                    }
+                    setupPlantChips()
+                    loadHistoryData() // Cargar datos iniciales
                 }
-
             } catch (e: Exception) {
-                Log.e("HistoryActivity", "Error cargando plantas familia", e)
-                runOnUiThread {
-                    Toast.makeText(this, "Error al cargar plantas", Toast.LENGTH_SHORT).show()
-                }
+                Log.e("History", "Error cargando plantas", e)
             }
         }.start()
     }
 
-    private fun showNoPlantsMessage() {
-        Toast.makeText(this, "No hay plantas en tu familia", Toast.LENGTH_LONG).show()
-        tvHumidityAvg.text = "0%"
-        tvTempAvg.text = "0°C"
-        tvLightAvg.text = "0%"
-        lineChart.clear()
-        lineChart.setNoDataText("No hay datos de plantas")
-        event1.visibility = View.GONE
-        event2.visibility = View.GONE
-        event3.visibility = View.GONE
-    }
+    private fun setupPlantChips() {
+        chipGroupPlants.removeAllViews()
 
-    private fun createPlantButtons() {
-        plantsContainer.removeAllViews()
-        plantButtons.clear()
+        // 1. Chip "Todas" (Manual)
+        val allChip = createChip("Todas", -1)
+        allChip.isChecked = true
+        chipGroupPlants.addView(allChip)
 
-        // Botón "Todas"
-        val allButton = createPlantButton("Todas", -1)
-        plantsContainer.addView(allButton)
-        plantButtons.add(allButton)
-
-        // Botones para cada planta de la familia
+        // 2. Chips dinámicos
         plantasFamilia.forEach { plant ->
-            val button = createPlantButton(plant.nombre, plant.id)
-            plantsContainer.addView(button)
-            plantButtons.add(button)
-        }
-    }
-
-    private fun createPlantButton(text: String, plantId: Long): TextView {
-        val button = TextView(this).apply {
-            this.text = text
-            setPadding(20.dpToPx(), 10.dpToPx(), 20.dpToPx(), 10.dpToPx())
-            setTextColor(ContextCompat.getColor(this@HistoryActivity, R.color.text_gray))
-            textSize = 14f
-            setOnClickListener {
-                selectedPlantId = plantId
-                updatePlantSelection()
-                loadHistoryData()
-            }
+            val chip = createChip(plant.nombre, plant.id)
+            chipGroupPlants.addView(chip)
         }
 
-        button.tag = plantId
-        return button
-    }
-
-    private fun updatePlantSelection() {
-        val selectedBg = ContextCompat.getDrawable(this, R.drawable.bg_button_selected)
-        val normalBg = ContextCompat.getDrawable(this, android.R.color.transparent)
-        val selectedTextColor = ContextCompat.getColor(this, android.R.color.white)
-        val normalTextColor = ContextCompat.getColor(this, R.color.text_gray)
-
-        plantButtons.forEach { button ->
-            val plantId = button.tag as Long
-            if (plantId == selectedPlantId) {
-                button.background = selectedBg
-                button.setTextColor(selectedTextColor)
+        // Listener de selección
+        chipGroupPlants.setOnCheckedChangeListener { group, checkedId ->
+            if (checkedId == View.NO_ID) {
+                // Evitar deselección total -> volver a seleccionar "Todas"
+                // Nota: Esto puede requerir buscar el chip por ID,
+                // por simplicidad si no hay selección, asumimos -1
+                selectedPlantId = -1
+                // Opcional: forzar check visual en "Todas"
             } else {
-                button.background = normalBg
-                button.setTextColor(normalTextColor)
+                val chip = group.findViewById<Chip>(checkedId)
+                selectedPlantId = chip.tag as Long
             }
+            loadHistoryData()
         }
     }
 
-    private fun selectPlantButton(button: TextView) {
-        selectedPlantId = button.tag as Long
-        updatePlantSelection()
-        loadHistoryData()
+    private fun createChip(label: String, tagId: Long): Chip {
+        val chip = Chip(this)
+        chip.text = label
+        chip.tag = tagId
+        chip.isCheckable = true
+
+        // Estilo visual del Chip (Programático para coincidir con XML)
+        chip.setChipBackgroundColorResource(R.color.selector_chip_background_color)
+        chip.setTextColor(ContextCompat.getColorStateList(this, R.color.selector_chip_text_color))
+        chip.setChipStrokeColorResource(android.R.color.transparent)
+        chip.chipStrokeWidth = 0f
+
+        // Estilo Choice (Radio Button behavior)
+        chip.isClickable = true
+        chip.isCheckedIconVisible = false
+
+        return chip
     }
 
     private fun loadHistoryData() {
-        // Mostrar loading
-        tvHumidityAvg.text = "--%"
-        tvTempAvg.text = "--°C"
-        tvLightAvg.text = "--%"
+        // Estado de carga simple
+        tvHumidityAvg.text = "..."
 
         Thread {
             try {
-                // Obtener estadísticas familiares
-                val stats = PlantaDao.obtenerEstadisticasHistorialFamiliar(
-                    userId,
-                    selectedPeriod,
-                    selectedPlantId
-                )
+                // 1. Estadísticas
+                val stats = PlantaDao.obtenerEstadisticasHistorialFamiliar(userId, selectedPeriod, selectedPlantId)
 
-                // Obtener datos para el gráfico
-                val graficoData = PlantaDao.obtenerDatosHistoricosGraficoFamiliar(
-                    userId,
-                    selectedPeriod,
-                    selectedPlantId
-                )
+                // 2. Gráfico
+                val graficoData = PlantaDao.obtenerDatosHistoricosGraficoFamiliar(userId, selectedPeriod, selectedPlantId)
 
-                // Obtener eventos familiares (con manejo de error)
+                // 3. Eventos
                 val eventos = try {
-                    PlantaDao.obtenerEventosRecientesFamiliar(
-                        userId,
-                        3,
-                        selectedPlantId
-                    )
-                } catch (e: Exception) {
-                    Log.w("HistoryActivity", "Error al obtener eventos, usando lista vacía", e)
-                    emptyList()
-                }
+                    PlantaDao.obtenerEventosRecientesFamiliar(userId, 3, selectedPlantId)
+                } catch (e: Exception) { emptyList() }
 
                 runOnUiThread {
-                    // Actualizar estadísticas
-                    tvHumidityAvg.text = String.format("%.1f%%", stats["humedad"] ?: 0f)
+                    // Actualizar UI Cards
+                    tvHumidityAvg.text = String.format("%.0f%%", stats["humedad"] ?: 0f)
                     tvTempAvg.text = String.format("%.1f°C", stats["temperatura"] ?: 0f)
-                    tvLightAvg.text = String.format("%.1f%%", stats["luz"] ?: 0f)
+                    tvLightAvg.text = String.format("%.0f%%", stats["luz"] ?: 0f)
 
-                    // Configurar gráfico
-                    setupChart(graficoData)
+                    // Actualizar Gráfico
+                    setupExpertChart(graficoData)
 
-                    // Mostrar eventos
-                    mostrarEventos(eventos)
+                    // Actualizar Lista Eventos
+                    renderEvents(eventos)
                 }
 
             } catch (e: Exception) {
-                Log.e("HistoryActivity", "Error cargando datos", e)
+                Log.e("History", "Error data", e)
                 runOnUiThread {
-                    Toast.makeText(this, "Error al cargar datos", Toast.LENGTH_SHORT).show()
-                    // Mostrar valores por defecto
-                    tvHumidityAvg.text = "65%"
-                    tvTempAvg.text = "22°C"
-                    tvLightAvg.text = "75%"
-                    lineChart.setNoDataText("Error cargando datos")
-                    event1.visibility = View.GONE
-                    event2.visibility = View.GONE
-                    event3.visibility = View.GONE
+                    lineChart.setNoDataText("Error al cargar datos")
                 }
             }
         }.start()
     }
 
-    private fun setupChart(graficoData: Map<String, List<DataPointDAO>>) {
+    private fun setupExpertChart(data: Map<String, List<DataPointDAO>>) {
         lineChart.clear()
 
-        // Si no hay datos, mostrar mensaje
-        if (graficoData.isEmpty() || graficoData["humedad"].isNullOrEmpty()) {
-            lineChart.setNoDataText("No hay datos disponibles")
-            lineChart.setNoDataTextColor(ContextCompat.getColor(this, R.color.text_gray))
-            lineChart.invalidate()
+        if (data.isEmpty() || data["humedad"].isNullOrEmpty()) {
+            lineChart.setNoDataText("Sin datos para este periodo")
+            lineChart.setNoDataTextColor(Color.GRAY)
             return
         }
 
-        // Configuración básica
+        // --- Configuración General (Look Limpio) ---
         lineChart.description.isEnabled = false
-        lineChart.setTouchEnabled(true)
-        lineChart.isDragEnabled = true
-        lineChart.setScaleEnabled(true)
-        lineChart.setPinchZoom(true)
+        lineChart.legend.isEnabled = false // Ya tenemos leyenda personalizada en el XML
         lineChart.setDrawGridBackground(false)
+        lineChart.axisRight.isEnabled = false
+        lineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
+        lineChart.xAxis.setDrawGridLines(false) // Sin líneas verticales
+        lineChart.xAxis.textColor = Color.parseColor("#9CA3AF")
+        lineChart.axisLeft.textColor = Color.parseColor("#9CA3AF")
+        lineChart.axisLeft.setDrawGridLines(true) // Líneas horizontales sutiles
+        lineChart.axisLeft.gridColor = Color.parseColor("#F3F4F6")
 
-        // Leyenda
-        val legend = lineChart.legend
-        legend.isEnabled = true
-        legend.verticalAlignment = Legend.LegendVerticalAlignment.TOP
-        legend.horizontalAlignment = Legend.LegendHorizontalAlignment.RIGHT
-        legend.orientation = Legend.LegendOrientation.VERTICAL
-        legend.setDrawInside(false)
-        legend.textSize = 11f
-        legend.textColor = ContextCompat.getColor(this, R.color.text_dark)
+        // Animación suave
+        lineChart.animateX(1000)
 
-        // Eje X
-        val xAxis = lineChart.xAxis
-        xAxis.position = XAxis.XAxisPosition.BOTTOM
-        xAxis.granularity = 1f
-        xAxis.setDrawGridLines(true)
-        xAxis.gridColor = ContextCompat.getColor(this, R.color.chart_grid)
-        xAxis.gridLineWidth = 0.5f
-        xAxis.textColor = ContextCompat.getColor(this, R.color.text_gray)
-        xAxis.textSize = 10f
+        // --- Datasets ---
+        val sets = ArrayList<com.github.mikephil.charting.interfaces.datasets.ILineDataSet>()
 
-        val labels = graficoData["humedad"]?.map { it.label } ?: emptyList()
-        xAxis.valueFormatter = object : ValueFormatter() {
+        // Helper para crear líneas bonitas
+        fun createSet(entries: List<DataPointDAO>?, label: String, colorHex: String, fillDrawableId: Int?): LineDataSet? {
+            if (entries.isNullOrEmpty()) return null
+
+            val entryList = entries.mapIndexed { index, point -> Entry(index.toFloat(), point.value) }
+            val set = LineDataSet(entryList, label)
+
+            val color = Color.parseColor(colorHex)
+            set.color = color
+            set.setCircleColor(color)
+            set.lineWidth = 2.5f
+            set.circleRadius = 0f // Sin puntos en la línea (más limpio)
+            set.setDrawValues(false) // Sin números sobre la línea
+            set.mode = LineDataSet.Mode.CUBIC_BEZIER // Línea curva suave
+
+            // Efecto de Relleno (Gradient)
+            if (fillDrawableId != null) {
+                set.setDrawFilled(true)
+                set.fillDrawable = ContextCompat.getDrawable(this, fillDrawableId)
+            }
+            return set
+        }
+
+        // Añadir Humedad (Verde con degradado)
+        // Nota: Si no creaste el drawable gradient_chart, usa fillColor = Color.GREEN
+        val setHum = createSet(data["humedad"], "Hum", "#2D5A40", R.drawable.gradient_chart)
+        if (setHum != null) sets.add(setHum)
+
+        // Añadir Temp (Rojo, solo línea)
+        val setTemp = createSet(data["temperatura"], "Temp", "#EF4444", null)
+        if (setTemp != null) sets.add(setTemp)
+
+        // Añadir Luz (Amarillo, solo línea)
+        val setLuz = createSet(data["luz"], "Luz", "#F59E0B", null)
+        if (setLuz != null) sets.add(setLuz)
+
+        val lineData = LineData(sets)
+        lineChart.data = lineData
+
+        // Formateador eje X (Fechas/Horas)
+        val labels = data["humedad"]?.map { it.label } ?: emptyList()
+        lineChart.xAxis.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 val index = value.toInt()
                 return if (index in labels.indices) labels[index] else ""
             }
         }
 
-        // Eje Y izquierdo
-        val leftAxis = lineChart.axisLeft
-        leftAxis.axisMinimum = 0f
-        leftAxis.axisMaximum = 100f
-        leftAxis.granularity = 20f
-        leftAxis.setDrawGridLines(true)
-        leftAxis.gridColor = ContextCompat.getColor(this, R.color.chart_grid)
-        leftAxis.gridLineWidth = 0.5f
-        leftAxis.textColor = ContextCompat.getColor(this, R.color.text_gray)
-        leftAxis.textSize = 10f
-        leftAxis.valueFormatter = object : ValueFormatter() {
-            override fun getFormattedValue(value: Float): String {
-                return "${value.toInt()}"
-            }
-        }
-
-        // Eje Y derecho
-        val rightAxis = lineChart.axisRight
-        rightAxis.isEnabled = false
-
-        // Preparar datos
-        val entriesHumedad = mutableListOf<Entry>()
-        val entriesTemp = mutableListOf<Entry>()
-        val entriesLuz = mutableListOf<Entry>()
-
-        // Datos de humedad
-        graficoData["humedad"]?.forEachIndexed { index, point ->
-            entriesHumedad.add(Entry(index.toFloat(), point.value))
-        }
-
-        // Datos de temperatura (escalar si es necesario)
-        graficoData["temperatura"]?.forEachIndexed { index, point ->
-            // Ajustar escala de temperatura si es muy alta
-            val tempValue = if (point.value > 50) point.value / 2 else point.value
-            entriesTemp.add(Entry(index.toFloat(), tempValue))
-        }
-
-        // Datos de luz
-        graficoData["luz"]?.forEachIndexed { index, point ->
-            entriesLuz.add(Entry(index.toFloat(), point.value))
-        }
-
-        // Crear datasets
-        val setHumedad = LineDataSet(entriesHumedad, "Humedad (%)")
-        setHumedad.color = ContextCompat.getColor(this, R.color.green_header)
-        setHumedad.lineWidth = 2.5f
-        setHumedad.setDrawCircles(false)
-        setHumedad.setDrawValues(false)
-        setHumedad.mode = LineDataSet.Mode.CUBIC_BEZIER
-
-        val setTemp = LineDataSet(entriesTemp, "Temperatura (°C)")
-        setTemp.color = ContextCompat.getColor(this, R.color.sensor_temp_icon)
-        setTemp.lineWidth = 2.5f
-        setTemp.setDrawCircles(false)
-        setTemp.setDrawValues(false)
-        setTemp.mode = LineDataSet.Mode.CUBIC_BEZIER
-
-        val setLuz = LineDataSet(entriesLuz, "Luz (%)")
-        setLuz.color = ContextCompat.getColor(this, R.color.sensor_light_icon)
-        setLuz.lineWidth = 2.5f
-        setLuz.setDrawCircles(false)
-        setLuz.setDrawValues(false)
-        setLuz.mode = LineDataSet.Mode.CUBIC_BEZIER
-
-        // Crear LineData
-        val lineData = LineData(setHumedad, setTemp, setLuz)
-        lineData.setValueTextSize(10f)
-
-        lineChart.data = lineData
         lineChart.invalidate()
     }
 
-    private fun mostrarEventos(eventos: List<PlantaDao.EventoDAO>) {
-        val eventViews = listOf(event1, event2, event3)
+    private fun renderEvents(eventos: List<PlantaDao.EventoDAO>) {
+        val views = listOf(event1, event2, event3)
+
+        // Ocultar todos primero
+        views.forEach {
+            it.visibility = View.GONE
+            // Separador (si existe en el padre, pero aquí manejamos el include)
+        }
 
         eventos.forEachIndexed { index, evento ->
-            if (index < eventViews.size) {
-                updateEventView(eventViews[index], evento)
+            if (index < views.size) {
+                val view = views[index]
+                view.visibility = View.VISIBLE
+
+                val icon = view.findViewById<ImageView>(R.id.imgEventIcon)
+                val title = view.findViewById<TextView>(R.id.tvEventTitle)
+                val subtitle = view.findViewById<TextView>(R.id.tvEventSubtitle)
+
+                title.text = evento.tipo
+                subtitle.text = "${evento.planta} • ${getRelativeTime(evento.fecha)}"
+
+                // Icono según tipo
+                when (evento.iconoTipo) {
+                    1 -> { // Riego
+                        icon.setImageResource(R.drawable.ic_water_drop)
+                        icon.setColorFilter(Color.parseColor("#3B82F6")) // Azul
+                    }
+                    2 -> { // Temp/Alerta
+                        icon.setImageResource(R.drawable.ic_thermometer)
+                        icon.setColorFilter(Color.parseColor("#EF4444")) // Rojo
+                    }
+                    else -> { // General
+                        icon.setImageResource(R.drawable.ic_leaf) // Asegúrate de tener este icono
+                        icon.setColorFilter(Color.parseColor("#10B981")) // Verde
+                    }
+                }
             }
         }
 
-        // Ocultar eventos no usados
-        for (i in eventos.size until eventViews.size) {
-            eventViews[i].visibility = View.GONE
-        }
-
-        // Si no hay eventos, mostrar mensaje
         if (eventos.isEmpty()) {
+            // Manejo opcional de "Sin eventos"
             event1.visibility = View.VISIBLE
-            event1.findViewById<TextView>(R.id.tvEventTitle).text = "No hay eventos recientes"
-            event1.findViewById<TextView>(R.id.tvEventSubtitle).text = ""
-            event1.findViewById<ImageView>(R.id.imgEventIcon).setImageResource(R.drawable.ic_leaf)
-            event2.visibility = View.GONE
-            event3.visibility = View.GONE
+            event1.findViewById<TextView>(R.id.tvEventTitle).text = "Sin eventos recientes"
+            event1.findViewById<TextView>(R.id.tvEventSubtitle).text = "Todo está tranquilo"
         }
     }
 
-    private fun updateEventView(eventView: CardView, evento: PlantaDao.EventoDAO) {
-        eventView.visibility = View.VISIBLE
-
-        val icon = eventView.findViewById<ImageView>(R.id.imgEventIcon)
-        val title = eventView.findViewById<TextView>(R.id.tvEventTitle)
-        val subtitle = eventView.findViewById<TextView>(R.id.tvEventSubtitle)
-
-        // Configurar icono según tipo
-        when (evento.iconoTipo) {
-            1 -> { // Riego
-                icon.setImageResource(R.drawable.ic_water)
-                icon.setColorFilter(ContextCompat.getColor(this, R.color.green_header))
+    private fun getRelativeTime(dateString: String): String {
+        // Asumiendo formato de fecha ISO o similar "yyyy-MM-dd HH:mm:ss"
+        // Ajusta el patrón según cómo guardes las fechas en tu BD
+        val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        try {
+            val date = format.parse(dateString)
+            if (date != null) {
+                return DateUtils.getRelativeTimeSpanString(
+                    date.time,
+                    System.currentTimeMillis(),
+                    DateUtils.MINUTE_IN_MILLIS
+                ).toString()
             }
-            2 -> { // Alerta
-                icon.setImageResource(R.drawable.ic_thermometer)
-                icon.setColorFilter(ContextCompat.getColor(this, R.color.sensor_temp_icon))
-            }
-            3 -> { // Estado cambiado
-                icon.setImageResource(R.drawable.ic_leaf)
-                icon.setColorFilter(ContextCompat.getColor(this, R.color.sensor_light_icon))
-            }
-            else -> {
-                icon.setImageResource(R.drawable.ic_leaf)
-                icon.setColorFilter(ContextCompat.getColor(this, R.color.text_gray))
-            }
+        } catch (e: Exception) {
+            return dateString // Fallback si falla el parseo
         }
-
-        title.text = evento.tipo
-        subtitle.text = "${evento.planta} - ${formatTimeAgo(evento.fecha)}"
-
-        eventView.setOnClickListener {
-            Toast.makeText(this, "${evento.tipo}: ${evento.descripcion}", Toast.LENGTH_SHORT).show()
-        }
+        return dateString
     }
-
-    private fun formatTimeAgo(fecha: String): String {
-        // Implementar lógica para mostrar "Hace X horas/días"
-        // Por simplicidad, devolver la fecha tal cual
-        return fecha
-    }
-
-    // Extension para convertir dp a px
-    private fun Int.dpToPx(): Int = (this * resources.displayMetrics.density).toInt()
 }

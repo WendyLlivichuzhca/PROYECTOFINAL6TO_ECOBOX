@@ -2,34 +2,43 @@ package com.example.proyectofinal6to_ecobox.presentacion.ui
 
 import android.app.DatePickerDialog
 import android.os.Bundle
+import android.text.InputType
 import android.util.Patterns
 import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.UsuarioDao
-import com.google.android.material.textfield.TextInputEditText
 import java.util.Calendar
 
 class RegisterActivity : AppCompatActivity() {
 
-    private lateinit var etRegName: TextInputEditText
-    private lateinit var etRegLastName: TextInputEditText
-    private lateinit var etRegEmail: TextInputEditText
-    private lateinit var etRegUsername: TextInputEditText
-    private lateinit var etRegPhone: TextInputEditText
-    private lateinit var etRegBirthDate: TextInputEditText
-    private lateinit var etRegPass: TextInputEditText
-    private lateinit var etRegPassConfirm: TextInputEditText
+    // Usamos EditText porque así está en el XML personalizado
+    private lateinit var etRegName: EditText
+    private lateinit var etRegLastName: EditText
+    private lateinit var etRegEmail: EditText
+    private lateinit var etRegUsername: EditText
+    private lateinit var etRegPhone: EditText
+    private lateinit var etRegBirthDate: EditText
+    private lateinit var etRegPass: EditText
+    private lateinit var etRegPassConfirm: EditText
+
     private lateinit var btnRegister: Button
     private lateinit var btnBackToLogin: TextView
+    private lateinit var btnBackReg: ImageButton // La flecha de arriba
+    private lateinit var btnToggleRegPass: ImageView // El ojito
+
+    private var isPasswordVisible = false // Variable para controlar el ojito
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
 
-        // Vincular vistas
+        // 1. Vincular vistas (IDs deben coincidir con tu XML)
         etRegName = findViewById(R.id.etRegName)
         etRegLastName = findViewById(R.id.etRegLastName)
         etRegEmail = findViewById(R.id.etRegEmail)
@@ -41,10 +50,35 @@ class RegisterActivity : AppCompatActivity() {
 
         btnRegister = findViewById(R.id.btnRegister)
         btnBackToLogin = findViewById(R.id.btnBackToLogin)
+        btnBackReg = findViewById(R.id.btnBack)
+        btnToggleRegPass = findViewById(R.id.btnToggleRegPass)
 
+        // 2. Configurar Listeners
         etRegBirthDate.setOnClickListener { mostrarCalendario() }
         btnRegister.setOnClickListener { registrar() }
-        btnBackToLogin.setOnClickListener { finish() }
+
+        // Botones de navegación
+        btnBackToLogin.setOnClickListener { finish() } // Vuelve al Login
+        btnBackReg.setOnClickListener { finish() }     // La flecha también vuelve
+
+        // Lógica del Ojo (Ver/Ocultar contraseña)
+        btnToggleRegPass.setOnClickListener { togglePasswordVisibility() }
+    }
+
+    private fun togglePasswordVisibility() {
+        if (isPasswordVisible) {
+            // Ocultar Contraseña
+            etRegPass.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            btnToggleRegPass.setImageResource(R.drawable.ic_eye_visibility) // Ícono de ojo normal
+        } else {
+            // Mostrar Contraseña
+            etRegPass.inputType = InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            // Aquí podrías cambiar el icono a uno de "ojo tachado" si lo tienes, o dejar el mismo
+            btnToggleRegPass.setColorFilter(getColor(R.color.eco_primary)) // Pinta el ojo de verde al activar
+        }
+        isPasswordVisible = !isPasswordVisible
+        // Mueve el cursor al final del texto para que no moleste al escribir
+        etRegPass.setSelection(etRegPass.text.length)
     }
 
     private fun mostrarCalendario() {
@@ -53,32 +87,32 @@ class RegisterActivity : AppCompatActivity() {
         val mesActual = calendario.get(Calendar.MONTH)
         val diaActual = calendario.get(Calendar.DAY_OF_MONTH)
 
+        // Estilo de calendario por defecto (o puedes definir uno en styles)
         val datePicker = DatePickerDialog(this, { _, year, month, dayOfMonth ->
+
             // --- VALIDACIÓN DE EDAD (> 18) ---
             var edad = anioActual - year
 
-            // Si aún no ha llegado su cumpleaños este año, restamos 1 a la edad
+            // Si aún no ha llegado su cumpleaños este año, restamos 1
             if (mesActual < month || (mesActual == month && diaActual < dayOfMonth)) {
                 edad--
             }
 
             if (edad < 18) {
-                // ES MENOR DE EDAD
                 Toast.makeText(this, "Debes ser mayor de 18 años para registrarte", Toast.LENGTH_LONG).show()
-                etRegBirthDate.setText("") // Borramos la fecha inválida
-                etRegBirthDate.error = "Edad insuficiente" // Marcamos error visual
+                etRegBirthDate.setText("")
+                etRegBirthDate.error = "Edad insuficiente"
             } else {
-                // ES MAYOR DE EDAD -> Procesamos la fecha
+                // Formato YYYY-MM-DD para guardar limpio en BD
                 val fechaSeleccionada = String.format("%04d-%02d-%02d", year, month + 1, dayOfMonth)
                 etRegBirthDate.setText(fechaSeleccionada)
-                etRegBirthDate.error = null // Limpiar error
+                etRegBirthDate.error = null
             }
 
         }, anioActual, mesActual, diaActual)
 
-        // Opcional: No permitir seleccionar fechas futuras
+        // No permitir fechas futuras (nadie nace mañana)
         datePicker.datePicker.maxDate = System.currentTimeMillis()
-
         datePicker.show()
     }
 
@@ -93,85 +127,51 @@ class RegisterActivity : AppCompatActivity() {
         val pass = etRegPass.text.toString().trim()
         val confirm = etRegPassConfirm.text.toString().trim()
 
-        // 2. VALIDACIÓN PROFESIONAL (Campo por campo)
+        // 2. VALIDACIÓN (Campo por campo)
         var hayErrores = false
 
-        if (nombre.isEmpty()) {
-            etRegName.error = "El nombre es obligatorio"
-            hayErrores = true
-        } else {
-            etRegName.error = null
-        }
-
-        if (apellido.isEmpty()) {
-            etRegLastName.error = "El apellido es obligatorio"
-            hayErrores = true
-        } else {
-            etRegLastName.error = null
-        }
-
-        if (username.isEmpty()) {
-            etRegUsername.error = "El usuario es obligatorio"
-            hayErrores = true
-        } else {
-            etRegUsername.error = null
-        }
+        if (nombre.isEmpty()) { etRegName.error = "Requerido"; hayErrores = true }
+        if (apellido.isEmpty()) { etRegLastName.error = "Requerido"; hayErrores = true }
+        if (username.isEmpty()) { etRegUsername.error = "Requerido"; hayErrores = true }
 
         if (email.isEmpty()) {
-            etRegEmail.error = "El email es obligatorio"
+            etRegEmail.error = "Requerido"
             hayErrores = true
         } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            etRegEmail.error = "Ingresa un correo válido"
+            etRegEmail.error = "Correo inválido"
             hayErrores = true
-        } else {
-            etRegEmail.error = null
         }
 
-        if (telefono.isEmpty()) {
-            etRegPhone.error = "El teléfono es requerido"
-            hayErrores = true
-        } else {
-            etRegPhone.error = null
-        }
-
-        if (fechaNacimiento.isEmpty()) {
-            etRegBirthDate.error = "Selecciona una fecha válida (+18)"
-            hayErrores = true
-        } else {
-            etRegBirthDate.error = null
-        }
+        if (telefono.isEmpty()) { etRegPhone.error = "Requerido"; hayErrores = true }
+        if (fechaNacimiento.isEmpty()) { etRegBirthDate.error = "Requerido"; hayErrores = true }
 
         if (pass.isEmpty()) {
-            etRegPass.error = "Ingresa una contraseña"
+            etRegPass.error = "Requerido"
             hayErrores = true
         } else if (pass.length < 6) {
             etRegPass.error = "Mínimo 6 caracteres"
             hayErrores = true
-        } else {
-            etRegPass.error = null
         }
 
         if (confirm.isEmpty()) {
             etRegPassConfirm.error = "Confirma tu contraseña"
             hayErrores = true
         } else if (pass != confirm) {
-            etRegPassConfirm.error = "Las contraseñas no coinciden"
+            etRegPassConfirm.error = "No coinciden"
             hayErrores = true
-        } else {
-            etRegPassConfirm.error = null
         }
 
-        // Si encontramos algún error, detenemos el proceso aquí
         if (hayErrores) {
-            Toast.makeText(this, "Por favor corrige los errores marcados", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Verifica los errores marcados", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // --- 3. GUARDAR EN BD (Solo si todo es válido) ---
-        btnRegister.isEnabled = false
-        Toast.makeText(this, "Registrando...", Toast.LENGTH_SHORT).show()
+        // --- 3. GUARDAR EN BD ---
+        btnRegister.isEnabled = false // Evitar doble clic
+        Toast.makeText(this, "Creando cuenta...", Toast.LENGTH_SHORT).show()
 
         Thread {
+            // Llamamos a tu DAO
             val exito = UsuarioDao.crearUsuario(
                 nombre, apellido, email, username, telefono, fechaNacimiento, pass
             )
@@ -179,10 +179,10 @@ class RegisterActivity : AppCompatActivity() {
             runOnUiThread {
                 btnRegister.isEnabled = true
                 if (exito) {
-                    Toast.makeText(this, "¡Cuenta creada exitosamente!", Toast.LENGTH_LONG).show()
-                    finish()
+                    Toast.makeText(this, "¡Bienvenido! Cuenta creada.", Toast.LENGTH_LONG).show()
+                    finish() // Cierra registro y vuelve al login
                 } else {
-                    Toast.makeText(this, "Error: El usuario o email ya existen", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Error: Usuario o Email ya registrados", Toast.LENGTH_LONG).show()
                 }
             }
         }.start()

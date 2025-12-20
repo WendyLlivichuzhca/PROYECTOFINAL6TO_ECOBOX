@@ -5,280 +5,274 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/eco_background">
+    android:background="#F5F7F6">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/nestedScrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation">
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:paddingBottom="80dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="80dp">
+            android:orientation="vertical">
 
-            <!-- HEADER VERDE CURVO -->
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <LinearLayout
+                android:id="@+id/layoutDashboard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_header_curved"
-                android:padding="24dp">
+                android:orientation="vertical"
+                android:visibility="visible">
 
-                <TextView
-                    android:id="@+id/tvWelcome"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Bienvenido"
-                    android:textColor="#E6FFFFFF"
-                    android:textSize="14sp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"/>
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="EcoBox 🌿"
-                    android:textColor="@color/white"
-                    android:textSize="28sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="6dp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tvWelcome"/>
+                    <View
+                        android:id="@+id/viewHeaderBg"
+                        android:layout_width="match_parent"
+                        android:layout_height="220dp"
+                        android:background="@drawable/bg_header_curved"
+                        app:layout_constraintTop_toTopOf="parent" />
 
-                <!-- Botones Header -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent">
+                    <TextView
+                        android:id="@+id/tvWelcome"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="24dp"
+                        android:layout_marginTop="56dp"
+                        android:text="Bienvenido de nuevo,"
+                        android:textColor="#CCFFFFFF"
+                        android:textSize="14sp"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
 
-                    <!-- Botón Alertas -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="24dp"
+                        android:text="EcoBox 🌿"
+                        android:textColor="@android:color/white"
+                        android:textSize="32sp"
+                        android:textStyle="bold"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/tvWelcome" />
+
                     <FrameLayout
                         android:id="@+id/btnAlerts"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@drawable/bg_stat_card"
-                        android:padding="8dp">
+                        android:layout_marginTop="56dp"
+                        android:layout_marginEnd="24dp"
+                        android:background="@drawable/bg_circle_glass"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
+
                         <ImageView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
                             android:src="@drawable/ic_bell"
-                            app:tint="@color/white"/>
+                            app:tint="@android:color/white" />
+
                         <View
-                            android:id="@+id/badgeAlert"
                             android:layout_width="8dp"
                             android:layout_height="8dp"
-                            android:background="@drawable/circle_background"
-                            android:backgroundTint="@color/status_critical"
-                            android:layout_gravity="top|end"/>
+                            android:layout_gravity="top|end"
+                            android:layout_margin="8dp"
+                            android:background="@drawable/shape_circle_red" />
                     </FrameLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
-                    <!-- Botón Logout -->
-                    <FrameLayout
-                        android:id="@+id/btnLogout"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_stat_card"
-                        android:padding="8dp">
-                        <ImageView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:src="@drawable/ic_logout"
-                            app:tint="@color/white"/>
-                    </FrameLayout>
-                </LinearLayout>
-
-                <!-- STATS GRID (3 Columnas) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="-40dp"
+                    android:baselineAligned="false"
                     android:orientation="horizontal"
-                    android:layout_marginTop="45dp"
-                    app:layout_constraintTop_toBottomOf="@id/tvWelcome">
+                    android:paddingHorizontal="20dp">
 
-                    <!-- Total -->
-                    <LinearLayout
+                    <include
+                        android:id="@+id/cardStatTotal"
+                        layout="@layout/item_stat_card_improved"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_stat_card"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="12dp"
-                        android:layout_marginEnd="4dp">
-                        <TextView
-                            android:id="@+id/tvCountTotal"
-                            android:text="12"
-                            android:textSize="22sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/white"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                        <TextView
-                            android:text="Plantas"
-                            android:textSize="12sp"
-                            android:textColor="#E6FFFFFF"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                    </LinearLayout>
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1" />
 
-                    <!-- Saludables -->
-                    <LinearLayout
+                    <include
+                        android:id="@+id/cardStatHealthy"
+                        layout="@layout/item_stat_card_improved"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_stat_card"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="12dp"
-                        android:layout_marginHorizontal="4dp">
-                        <TextView
-                            android:id="@+id/tvCountHealthy"
-                            android:text="8"
-                            android:textSize="22sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/white"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                        <TextView
-                            android:text="Saludables"
-                            android:textSize="12sp"
-                            android:textColor="#E6FFFFFF"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                    </LinearLayout>
+                        android:layout_marginHorizontal="6dp"
+                        android:layout_weight="1" />
 
-                    <!-- Críticas -->
-                    <LinearLayout
+                    <include
+                        android:id="@+id/cardStatCritical"
+                        layout="@layout/item_stat_card_improved"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_stat_card"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="12dp"
-                        android:layout_marginStart="4dp">
-                        <TextView
-                            android:id="@+id/tvCountCritical"
-                            android:text="4"
-                            android:textSize="22sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/white"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                        <TextView
-                            android:text="Atención Plantas"
-                            android:textSize="11sp"
-                            android:textColor="#E6FFFFFF"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                    </LinearLayout>
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1" />
                 </LinearLayout>
-            </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <!-- ALERTA ROJA (Visible si hay problemas) -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardAlertCritical"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="20dp"
-                android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@color/status_critical"
-                app:cardCornerRadius="12dp"
-                app:strokeWidth="0dp">
-                <LinearLayout
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardAlertCritical"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="16dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_droplet"
-                        app:tint="@color/white"/>
+                    android:layout_marginHorizontal="24dp"
+                    android:layout_marginTop="24dp"
+                    app:cardBackgroundColor="#FEF2F2"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="#FCA5A5"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginStart="16dp">
-                        <TextView
-                            android:text="¡Atención requerida!"
-                            android:textStyle="bold"
-                            android:textColor="@color/white"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"/>
-                        <TextView
-                            android:id="@+id/tvAlertMessage"
-                            android:layout_width="wrap_content"
+                        android:gravity="center_vertical"
+                        android:padding="16dp">
+
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:background="@drawable/bg_circle_light_red"
+                            android:padding="6dp"
+                            android:src="@drawable/ic_droplet"
+                            app:tint="#DC2626" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="4 plantas necesitan riego urgente"
-                            android:textColor="#E6FFFFFF"
-                            android:textSize="13sp"/>
+                            android:layout_marginStart="16dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Riego Urgente"
+                                android:textColor="#991B1B"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvAlertMessage"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="4 plantas necesitan agua hoy"
+                                android:textColor="#7F1D1D"
+                                android:textSize="13sp" />
+                        </LinearLayout>
                     </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                </com.google.android.material.card.MaterialCardView>
 
-            <!-- TÍTULO Y BOTÓN DE AGREGAR -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingHorizontal="24dp"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="12dp"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Mis Plantas"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="#212121"/>
-
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/fabAddPlant"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:fabSize="mini"
-                    app:backgroundTint="@color/eco_primary"
-                    app:tint="@color/white"
-                    app:elevation="0dp"
-                    android:src="@drawable/ic_add"/>
             </LinearLayout>
 
-            <!-- LISTA DE PLANTAS -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvPlants"
+            <LinearLayout
+                android:id="@+id/layoutPlants"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingHorizontal="20dp"
-                android:nestedScrollingEnabled="false"
-                tools:itemCount="3"
-                tools:listitem="@layout/item_plant"/>
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="24dp"
+                    android:layout_marginTop="48dp"
+                    android:text="Mis Plantas"
+                    android:textColor="#1F2937"
+                    android:textSize="28sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardSearch"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginHorizontal="24dp"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp"
+                    app:cardBackgroundColor="@android:color/white"
+                    app:cardCornerRadius="25dp"
+                    app:cardElevation="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:paddingHorizontal="16dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_search"
+                            app:tint="#BDBDBD" />
+
+                        <EditText
+                            android:id="@+id/etSearch"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="12dp"
+                            android:background="@null"
+                            android:hint="Buscar mi planta..."
+                            android:textColor="#1F2937"
+                            android:textColorHint="#BDBDBD"
+                            android:textSize="14sp"
+                            android:inputType="text"
+                            android:maxLines="1"
+                            android:imeOptions="actionDone"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvPlants"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:paddingHorizontal="16dp"
+                    tools:itemCount="3"
+                    tools:listitem="@layout/item_plant" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="80dp"/>
+
+            </LinearLayout>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- BARRA INFERIOR -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:menu="@menu/bottom_nav_menu"
+        android:background="@android:color/white"
+        app:elevation="16dp"
         app:labelVisibilityMode="labeled"
-        android:background="@color/white"
-        app:itemIconTint="@color/eco_primary"
-        app:itemTextColor="@color/eco_primary"
-        app:elevation="16dp"/>
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:menu="@menu/bottom_nav_menu" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddPlant"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:src="@drawable/ic_add"
+        app:backgroundTint="#2D5A40"
+        app:elevation="6dp"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@android:color/white" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
