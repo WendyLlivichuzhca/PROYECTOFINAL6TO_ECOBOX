@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="com.example.proyectofinal6to_ecobox.fragment.DashboardFragment"
+        android:label="Inicio"
+        tools:layout="@layout/fragment_dashboard" />
+
+    <fragment
+        android:id="@+id/nav_my_plants"
+        android:name="com.example.proyectofinal6to_ecobox.fragment.PlantsFragment"
+        android:label="Mis Plantas"
+        tools:layout="@layout/fragment_plants" />
+
+    <fragment
+        android:id="@+id/nav_families"
+        android:name="com.example.proyectofinal6to_ecobox.fragment.FamiliesFragment"
+        android:label="Mis Familias"
+        tools:layout="@layout/fragment_families" />
+
+    <fragment
+        android:id="@+id/nav_sensors"
+        android:name="com.example.proyectofinal6to_ecobox.presentacion.ui.fragments.SensorsFragment"
+        android:label="Sensores"
+        tools:layout="@layout/fragment_dashboard" />
+
+    <fragment
+        android:id="@+id/nav_history"
+        android:name="com.example.proyectofinal6to_ecobox.fragment.HistoryFragment"
+        android:label="Historial"
+        tools:layout="@layout/fragment_dashboard" />
+    <fragment
+        android:id="@+id/nav_family_detail"
+        android:name="com.example.proyectofinal6to_ecobox.fragment.FamilyDetailFragment"
+        android:label="Detalle Familia" />
+
+</navigation>

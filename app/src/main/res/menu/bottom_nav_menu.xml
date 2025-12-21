@@ -10,6 +10,10 @@
         android:id="@+id/nav_my_plants"
         android:icon="@drawable/ic_leaf"
         android:title="Plantas" />
+    <item
+        android:id="@+id/nav_families"
+        android:icon="@drawable/ic_family"
+        android:title="Familias" />
 
     <item
         android:id="@+id/nav_sensors"

@@ -81,12 +81,19 @@ object PlantaDao {
 
         try {
             if (conexion != null) {
+                // CORRECCIÓN: Usar alias para mapear a nombrePersonalizado
                 val sql = """
-                    SELECT p.id, p.nombre, p.especie, p.fecha_creacion, p.descripcion, p.familia_id 
+                    SELECT 
+                        p.id, 
+                        p.nombrePersonalizado as nombre, 
+                        p.especie, 
+                        p.fecha_creacion, 
+                        p.descripcion, 
+                        p.familia_id 
                     FROM planta p
                     INNER JOIN familia_usuario fu ON p.familia_id = fu.familia_id
                     WHERE fu.usuario_id = ? AND fu.activo = 1
-                    ORDER BY p.nombre ASC
+                    ORDER BY p.nombrePersonalizado ASC
                 """
 
                 val stmt = conexion.prepareStatement(sql)
@@ -97,7 +104,7 @@ object PlantaDao {
                 while (rs.next()) {
                     val planta = Planta(
                         rs.getLong("id"),
-                        rs.getString("nombre") ?: "Sin Nombre",
+                        rs.getString("nombre") ?: "Sin Nombre",  // Ahora viene de "nombrePersonalizado as nombre"
                         rs.getString("especie") ?: "Desconocida",
                         rs.getString("fecha_creacion") ?: "",
                         rs.getString("descripcion") ?: "",
@@ -172,42 +179,53 @@ object PlantaDao {
                 rsSalud.close()
                 stmtSalud.close()
 
-                // 3. Plantas críticas
+                // 3. Plantas críticas (CORREGIDO DEFINITIVAMENTE)
                 val sqlCriticas = """
                     SELECT COUNT(DISTINCT p.id) as criticas
                     FROM planta p
                     INNER JOIN familia_usuario fu ON p.familia_id = fu.familia_id
+                    
+                    -- Join para obtener el último estado (sin cambios)
                     LEFT JOIN (
-                        SELECT sep1.* 
-                        FROM seguimiento_estado_planta sep1
+                        SELECT sep1.* FROM seguimiento_estado_planta sep1
                         INNER JOIN (
                             SELECT planta_id, MAX(fecha_registro) as max_fecha
                             FROM seguimiento_estado_planta
                             GROUP BY planta_id
                         ) sep2 ON sep1.planta_id = sep2.planta_id AND sep1.fecha_registro = sep2.max_fecha
                     ) ult_seg ON p.id = ult_seg.planta_id
+                    
+                    -- Join para el sensor de humedad (sin cambios)
                     LEFT JOIN main_sensor ms ON p.id = ms.planta_id AND ms.tipo_sensor_id = 2
                     LEFT JOIN medicion m ON ms.id = m.sensor_id 
                       AND m.fecha = (SELECT MAX(fecha) FROM medicion WHERE sensor_id = ms.id)
+                    
+                    -- Unimos notificaciones solo por usuario y estado 'no leída'
+                    LEFT JOIN notificacion n ON n.usuario_id = fu.usuario_id AND n.leida = 0
+                      
                     WHERE fu.usuario_id = ? 
                       AND fu.activo = 1
                       AND (
+                          -- Condición A: Estado explícito reportado
                           ult_seg.estado IN ('Necesita agua', 'Advertencia', 'Crítico')
+                          
+                          -- Condición B: Sensor de humedad bajo (< 40)
                           OR (m.valor IS NOT NULL AND m.valor < 40)
-                          OR EXISTS (
-                              SELECT 1 FROM notificacion n 
-                              WHERE n.usuario_id = fu.usuario_id 
-                                AND n.leida = 0 
-                                AND n.mensaje LIKE CONCAT('%', p.nombre, '%')
-                                AND (
-                                    n.mensaje LIKE '%baja%' 
-                                    OR n.mensaje LIKE '%advertencia%' 
-                                    OR n.mensaje LIKE '%crítico%'
-                                    OR n.mensaje LIKE '%necesita agua%'
-                                )
+                          
+                          -- Condición C: Existe notificación relevante para ESTA planta
+                          OR (
+                              n.id IS NOT NULL 
+                              AND n.mensaje LIKE CONCAT('%', p.nombrePersonalizado, '%')
+                              AND (
+                                  n.mensaje LIKE '%baja%' 
+                                  OR n.mensaje LIKE '%advertencia%' 
+                                  OR n.mensaje LIKE '%crítico%'
+                                  OR n.mensaje LIKE '%necesita agua%'
+                              )
                           )
                       )
                 """
+
                 val stmtCrit = conexion.prepareStatement(sqlCriticas)
                 stmtCrit.setLong(1, userId)
                 val rsCrit = stmtCrit.executeQuery()
@@ -283,7 +301,7 @@ object PlantaDao {
                 var sql = """
                     SELECT 
                         'Riego' as tipo,
-                        p.nombre as planta,
+                        p.nombrePersonalizado as planta,
                         r.fecha,
                         CONCAT('Regado: ', FORMAT(r.cantidad_agua, 1), 'L') as descripcion,
                         1 as icono_tipo
@@ -305,7 +323,7 @@ object PlantaDao {
                 
                 SELECT 
                     'Estado Cambiado' as tipo,
-                    p.nombre as planta,
+                    p.nombrePersonalizado as planta,
                     sep.fecha_registro as fecha,
                     CONCAT('Nuevo estado: ', sep.estado) as descripcion,
                     3 as icono_tipo
@@ -458,15 +476,16 @@ object PlantaDao {
                     return plantas
                 }
 
+                // CORRECCIÓN: Usar alias para nombrePersonalizado
                 val sqlPlantas = """
                     SELECT 
                         p.id,
-                        p.nombre,
+                        p.nombrePersonalizado as nombre,
                         p.especie,
                         p.descripcion
                     FROM planta p
                     WHERE p.familia_id = ?
-                    ORDER BY p.nombre ASC
+                    ORDER BY p.nombrePersonalizado ASC
                 """
 
                 val stmtPlantas = conexion.prepareStatement(sqlPlantas)
@@ -475,7 +494,7 @@ object PlantaDao {
 
                 while (rsPlantas.next()) {
                     val plantaId = rsPlantas.getLong("id")
-                    val plantaNombre = rsPlantas.getString("nombre") ?: "Sin nombre"
+                    val plantaNombre = rsPlantas.getString("nombre") ?: "Sin nombre"  // Ahora viene del alias
                     val plantaEspecie = rsPlantas.getString("especie") ?: ""
 
                     val datosSensores = obtenerDatosSensoresPlanta(plantaId)
@@ -761,8 +780,9 @@ object PlantaDao {
                 val familiaId = obtenerFamiliaIdDelUsuario(userId)
 
                 if (familiaId != -1L) {
+                    // CORRECCIÓN: Usar nombrePersonalizado en lugar de nombre
                     val sqlInsert = """
-                        INSERT INTO planta (nombre, especie, fecha_creacion, descripcion, familia_id)
+                        INSERT INTO planta (nombrePersonalizado, especie, fecha_creacion, descripcion, familia_id)
                         VALUES (?, ?, NOW(), ?, ?)
                     """
                     val stmt = conexion.prepareStatement(sqlInsert)
@@ -1085,8 +1105,8 @@ object PlantaDao {
     }
 
     // =========================================================================
-// FUNCIONES ESPECÍFICAS PARA TU DISEÑO DE SENSORES
-// =========================================================================
+    // FUNCIONES ESPECÍFICAS PARA TU DISEÑO DE SENSORES
+    // =========================================================================
 
     /**
      * Obtiene sensores de MI familia para mostrar en tu RecyclerView
@@ -1114,7 +1134,7 @@ object PlantaDao {
                     ts.unidad_medida,
                     es.nombre as estado,
                     es.id as estado_id,
-                    p.nombre as planta_nombre,
+                    p.nombrePersonalizado as planta_nombre,
                     COALESCE(m.valor, 0.0) as valor_actual,
                     COALESCE(DATE_FORMAT(m.fecha, '%H:%i'), '--:--') as ultima_hora
                 FROM main_sensor ms
@@ -1132,7 +1152,7 @@ object PlantaDao {
                 ) m ON ms.id = m.sensor_id
                 WHERE p.familia_id = ?
                   AND ms.activo = 1
-                ORDER BY p.nombre, ms.nombre
+                ORDER BY p.nombrePersonalizado, ms.nombre
             """
 
                 val stmt = conexion.prepareStatement(sql)
@@ -1260,9 +1280,9 @@ object PlantaDao {
         return Triple(activos, optimos, alerta)
     }
 
-// =========================================================================
-// FUNCIONES AUXILIARES ESPECÍFICAS
-// =========================================================================
+    // =========================================================================
+    // FUNCIONES AUXILIARES ESPECÍFICAS
+    // =========================================================================
 
     /**
      * Determina el estado UI según tu diseño (color, texto, progreso)

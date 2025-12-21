@@ -48,6 +48,8 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.play.services.cast.framework)
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
 
     // Si estás usando Room y te da error, comenta esta línea o revisa tu catálogo de versiones
     // implementation(libs.androidx.room.common.jvm)

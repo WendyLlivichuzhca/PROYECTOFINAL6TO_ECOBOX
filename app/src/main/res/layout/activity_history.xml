@@ -37,16 +37,6 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <ImageButton
-                        android:id="@+id/btnBack"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:layout_marginEnd="12dp"
-                        android:background="@drawable/bg_circle_decor"
-                        android:backgroundTint="#33FFFFFF"
-                        android:padding="10dp"
-                        android:src="@drawable/ic_back_arrow"
-                        app:tint="#FFFFFF" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -71,7 +61,6 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="52dp"
                     android:layout_marginTop="4dp"
                     android:text="Tendencias y análisis"
                     android:textColor="#CCFFFFFF"

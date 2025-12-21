@@ -11,7 +11,6 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.model.Planta
-import com.example.proyectofinal6to_ecobox.presentacion.ui.MainActivity.PlantaConDatos
 
 class PlantAdapter(
     private var plantasData: List<PlantaConDatos>,
@@ -124,4 +123,16 @@ class PlantAdapter(
         }
         notifyDataSetChanged()
     }
+
+    // Clase auxiliar para la UI (antes estaba dentro de MainActivity)
+    data class PlantaConDatos(
+        val planta: Planta,
+        val ubicacion: String,
+        val humedadSuelo: Float,
+        val temperatura: Float,
+        val luz: Float,
+        val nivelAgua: Int,
+        val estado: String,
+        val ultimoRiego: String
+    )
 }
