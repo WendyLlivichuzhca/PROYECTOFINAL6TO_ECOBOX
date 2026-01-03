@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.model.Planta
 import com.github.mikephil.charting.charts.LineChart
@@ -50,7 +51,7 @@ class PlantDetailActivity : AppCompatActivity() {
     private lateinit var switchLightAuto: MaterialSwitch
     private lateinit var btnWaterNow: Button
 
-    // Cards (Para cambiar colores de fondo)
+    // Cards
     private lateinit var cardHumidity: CardView
     private lateinit var cardLight: CardView
     private lateinit var cardTemp: CardView
@@ -133,7 +134,6 @@ class PlantDetailActivity : AppCompatActivity() {
         }
     }
 
-    // ================== MENÚ SUPERIOR ==================
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_plant_detail, menu)
         return true
@@ -153,8 +153,6 @@ class PlantDetailActivity : AppCompatActivity() {
         }
     }
 
-    // ================== CARGA DE DATOS ==================
-
     private fun loadPlantData() {
         plantaId = intent.getLongExtra("PLANT_ID", -1)
         val plantaNombre = intent.getStringExtra("PLANT_NAME") ?: "Planta"
@@ -163,15 +161,17 @@ class PlantDetailActivity : AppCompatActivity() {
         val temperatura = intent.getFloatExtra("PLANT_TEMP", 0f)
         val luz = intent.getFloatExtra("PLANT_LIGHT", 0f)
         val estado = intent.getStringExtra("PLANT_STATUS") ?: "healthy"
+        val fotoUrl = intent.getStringExtra("PLANT_PHOTO") ?: "" // NUEVO: Obtener la foto
 
         // Crear objeto Planta temporal
         planta = Planta().apply {
             id = plantaId
             nombre = plantaNombre
             this.ubicacion = ubicacion
+            this.foto = fotoUrl // NUEVO: Asignar la foto
         }
 
-        updateUI(humedad, temperatura, luz, estado, ubicacion, plantaNombre)
+        updateUI(humedad, temperatura, luz, estado, ubicacion, plantaNombre, fotoUrl)
         loadAdditionalData()
         loadHistoryData(24)
     }
@@ -182,22 +182,39 @@ class PlantDetailActivity : AppCompatActivity() {
         luz: Float,
         estado: String,
         ubicacion: String,
-        nombre: String
+        nombre: String,
+        fotoUrl: String // NUEVO: Recibir la foto
     ) {
         tvPlantName.text = nombre
         tvLocation.text = "📍 $ubicacion"
 
-        // Valores numéricos (Texto grande)
+        // 1. CARGAR LA FOTO EN EL ImageView GRANDE
+        if (fotoUrl.isNotEmpty()) {
+            try {
+                Glide.with(this)
+                    .load(fotoUrl)
+                    .placeholder(R.drawable.img_plant_placeholder)
+                    .error(R.drawable.img_plant_placeholder)
+                    .centerCrop()
+                    .into(ivPlant)
+            } catch (e: Exception) {
+                ivPlant.setImageResource(R.drawable.img_plant_placeholder)
+            }
+        } else {
+            ivPlant.setImageResource(R.drawable.img_plant_placeholder)
+        }
+
+        // 2. Valores numéricos
         tvHumidityValue.text = "${humedad.toInt()}%"
         tvLightValue.text = "${luz.toInt()} lux"
         tvTempValue.text = "${temperatura.toInt()}°C"
 
-        // Colores de las tarjetas
+        // 3. Colores de las tarjetas
         updateCardColor(cardHumidity, humedad, "humidity")
         updateCardColor(cardLight, luz, "light")
         updateCardColor(cardTemp, temperatura, "temperature")
 
-        // Lógica de estado General
+        // 4. Lógica de estado General
         val estadoInfo = when (estado) {
             "healthy", "Saludable", "Excelente" -> Triple("🌿", "Sana", R.color.status_healthy_dark)
             "warning", "Advertencia" -> Triple("⚠️", "Atención", R.color.status_warning_dark)
@@ -208,7 +225,7 @@ class PlantDetailActivity : AppCompatActivity() {
         tvStatusText.text = "${estadoInfo.first} ${estadoInfo.second}"
         tvStatusText.setTextColor(ContextCompat.getColor(this, estadoInfo.third))
 
-        // Nivel de agua (Barra de progreso)
+        // 5. Nivel de agua
         val nivelAgua = calculateWaterLevel(humedad)
         tvWaterLevelPercent.text = "$nivelAgua%"
         progressWater.progress = nivelAgua
@@ -228,13 +245,9 @@ class PlantDetailActivity : AppCompatActivity() {
         }
     }
 
-    // --- AQUÍ ESTABA EL PROBLEMA ---
-    // He quitado el multiplicador * 1.2 para que sea el valor real
     private fun calculateWaterLevel(humedad: Float): Int {
         return humedad.toInt().coerceIn(0, 100)
     }
-
-    // ================== DATOS SIMULADOS Y HILOS ==================
 
     private fun loadAdditionalData() {
         Thread {
@@ -253,8 +266,6 @@ class PlantDetailActivity : AppCompatActivity() {
             switchLightAuto.isChecked = true
         }
     }
-
-    // ================== LÓGICA DEL GRÁFICO (CHART) ==================
 
     private fun loadHistoryData(hours: Int) {
         val mockData = generateMockHistoryData(hours)
@@ -344,8 +355,6 @@ class PlantDetailActivity : AppCompatActivity() {
             .show()
     }
 
-    // ================== ACCIONES DE USUARIO ==================
-
     private fun waterPlantNow() {
         Toast.makeText(this, "🌊 Iniciando riego...", Toast.LENGTH_SHORT).show()
         btnWaterNow.isEnabled = false
@@ -377,12 +386,8 @@ class PlantDetailActivity : AppCompatActivity() {
     }
 
     private fun updateAutoWaterSetting(enabled: Boolean) { /* Guardar en DB */ }
-
     private fun updateAutoLightSetting(enabled: Boolean) { /* Guardar en DB */ }
 
-    // =========================================================================
-    //  COMPANION OBJECT (CORRECTO PARA RECIBIR DATOS CRUDOS)
-    // =========================================================================
     companion object {
         fun createIntent(
             context: Context,
@@ -398,6 +403,7 @@ class PlantDetailActivity : AppCompatActivity() {
             intent.putExtra("PLANT_TEMP", (datos["temperatura"] as? Number)?.toFloat() ?: 0f)
             intent.putExtra("PLANT_LIGHT", (datos["luz"] as? Number)?.toFloat() ?: 0f)
             intent.putExtra("PLANT_STATUS", datos["estado"] as? String ?: "healthy")
+            intent.putExtra("PLANT_PHOTO", planta.foto ?: "") // NUEVO: Pasar la foto
 
             return intent
         }

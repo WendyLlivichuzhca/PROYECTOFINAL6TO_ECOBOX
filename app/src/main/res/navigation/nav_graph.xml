@@ -38,5 +38,9 @@
         android:id="@+id/nav_family_detail"
         android:name="com.example.proyectofinal6to_ecobox.fragment.FamilyDetailFragment"
         android:label="Detalle Familia" />
+    <fragment
+        android:id="@+id/nav_profile"
+        android:name="com.example.proyectofinal6to_ecobox.fragment.ProfileFragment"
+        android:label="Perfil Usuario " />
 
 </navigation>

@@ -77,7 +77,10 @@ dependencies {
     implementation ("com.airbnb.android:lottie:6.1.0")
 // Material Design Components (for Cards, Buttons, Switches, CoordinatorLayout)
     implementation ("com.google.android.material:material:1.9.0")
+    implementation ("de.hdodenhof:circleimageview:3.1.0")
 
     // MPAndroidChart (for com.github.mikephil.charting.charts.LineChart)
     implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation ("com.github.bumptech.glide:glide:4.16.0")
+
 }

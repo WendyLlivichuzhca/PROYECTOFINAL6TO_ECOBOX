@@ -81,20 +81,23 @@ object PlantaDao {
 
         try {
             if (conexion != null) {
-                // CORRECCIÓN: Usar alias para mapear a nombrePersonalizado
+                // AGREGAR LOS CAMPOS faltantes: foto, estado, aspecto
                 val sql = """
-                    SELECT 
-                        p.id, 
-                        p.nombrePersonalizado as nombre, 
-                        p.especie, 
-                        p.fecha_creacion, 
-                        p.descripcion, 
-                        p.familia_id 
-                    FROM planta p
-                    INNER JOIN familia_usuario fu ON p.familia_id = fu.familia_id
-                    WHERE fu.usuario_id = ? AND fu.activo = 1
-                    ORDER BY p.nombrePersonalizado ASC
-                """
+                SELECT 
+                    p.id, 
+                    p.nombrePersonalizado as nombre, 
+                    p.especie, 
+                    p.fecha_creacion, 
+                    p.descripcion, 
+                    p.familia_id,
+                    p.foto,           -- NUEVO: Campo de foto
+                    p.estado,         -- NUEVO: Campo de estado
+                    p.aspecto         -- NUEVO: Campo de aspecto
+                FROM planta p
+                INNER JOIN familia_usuario fu ON p.familia_id = fu.familia_id
+                WHERE fu.usuario_id = ? AND fu.activo = 1
+                ORDER BY p.nombrePersonalizado ASC
+            """
 
                 val stmt = conexion.prepareStatement(sql)
                 stmt.setLong(1, userId)
@@ -104,12 +107,16 @@ object PlantaDao {
                 while (rs.next()) {
                     val planta = Planta(
                         rs.getLong("id"),
-                        rs.getString("nombre") ?: "Sin Nombre",  // Ahora viene de "nombrePersonalizado as nombre"
+                        rs.getString("nombre") ?: "Sin Nombre",
                         rs.getString("especie") ?: "Desconocida",
                         rs.getString("fecha_creacion") ?: "",
                         rs.getString("descripcion") ?: "",
                         rs.getLong("familia_id"),
-                        "Sin ubicación"
+                        "Sin ubicación",  // Esto es un valor por defecto
+                        // Los siguientes 3 parámetros van automáticamente al constructor de 10
+                        rs.getString("aspecto") ?: "normal",    // De la tabla
+                        rs.getString("estado") ?: "normal",     // De la tabla
+                        rs.getString("foto") ?: ""              // De la tabla
                     )
                     listaPlantas.add(planta)
                 }
@@ -121,6 +128,68 @@ object PlantaDao {
             }
         } catch (e: Exception) {
             Log.e("PlantaDao", "Error obteniendo plantas: ${e.message}", e)
+
+            // Manejo de error temporal
+            if (e.message?.contains("foto") == true ||
+                e.message?.contains("aspecto") == true ||
+                e.message?.contains("estado") == true
+            ) {
+
+                Log.d("PlantaDao", "Intentando con versión anterior de la consulta...")
+                return obtenerPlantasPorUsuarioVersionAnterior(userId)
+            }
+        }
+        return listaPlantas
+    }
+
+    /**
+     * Versión anterior de la consulta (sin foto, estado, aspecto)
+     */
+    private fun obtenerPlantasPorUsuarioVersionAnterior(userId: Long): List<Planta> {
+        val listaPlantas = ArrayList<Planta>()
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                val sql = """
+                SELECT 
+                    p.id, 
+                    p.nombrePersonalizado as nombre, 
+                    p.especie, 
+                    p.fecha_creacion, 
+                    p.descripcion, 
+                    p.familia_id
+                FROM planta p
+                INNER JOIN familia_usuario fu ON p.familia_id = fu.familia_id
+                WHERE fu.usuario_id = ? AND fu.activo = 1
+                ORDER BY p.nombrePersonalizado ASC
+            """
+
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, userId)
+
+                val rs: ResultSet = stmt.executeQuery()
+
+                while (rs.next()) {
+                    val planta = Planta(
+                        rs.getLong("id"),
+                        rs.getString("nombre") ?: "Sin Nombre",
+                        rs.getString("especie") ?: "Desconocida",
+                        rs.getString("fecha_creacion") ?: "",
+                        rs.getString("descripcion") ?: "",
+                        rs.getLong("familia_id"),
+                        "Sin ubicación"
+                    )
+                    listaPlantas.add(planta)
+                }
+
+                Log.d("PlantaDao", "Versión anterior: ${listaPlantas.size} plantas")
+                rs.close()
+                stmt.close()
+                conexion.close()
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error en versión anterior: ${e.message}", e)
         }
         return listaPlantas
     }
@@ -237,7 +306,10 @@ object PlantaDao {
                 stmtCrit.close()
 
                 conexion.close()
-                Log.d("PlantaDao", "Estadísticas: Total=${stats[0]}, Saludables=${stats[1]}, Críticas=${stats[2]}")
+                Log.d(
+                    "PlantaDao",
+                    "Estadísticas: Total=${stats[0]}, Saludables=${stats[1]}, Críticas=${stats[2]}"
+                )
             }
         } catch (e: Exception) {
             Log.e("PlantaDao", "Error obteniendo estadísticas: ${e.message}", e)
@@ -284,7 +356,11 @@ object PlantaDao {
     /**
      * Obtiene eventos recientes SOLO de plantas de mi familia
      */
-    fun obtenerEventosRecientesFamiliar(userId: Long, limit: Int, plantaId: Long = -1): List<EventoDAO> {
+    fun obtenerEventosRecientesFamiliar(
+        userId: Long,
+        limit: Int,
+        plantaId: Long = -1
+    ): List<EventoDAO> {
         val eventos = mutableListOf<EventoDAO>()
         val conexion = MySqlConexion.getConexion()
 
@@ -359,13 +435,15 @@ object PlantaDao {
                 val rs = stmt.executeQuery()
 
                 while (rs.next()) {
-                    eventos.add(EventoDAO(
-                        tipo = rs.getString("tipo"),
-                        planta = rs.getString("planta"),
-                        fecha = rs.getString("fecha"),
-                        descripcion = rs.getString("descripcion"),
-                        iconoTipo = rs.getInt("icono_tipo")
-                    ))
+                    eventos.add(
+                        EventoDAO(
+                            tipo = rs.getString("tipo"),
+                            planta = rs.getString("planta"),
+                            fecha = rs.getString("fecha"),
+                            descripcion = rs.getString("descripcion"),
+                            iconoTipo = rs.getInt("icono_tipo")
+                        )
+                    )
                 }
 
                 rs.close()
@@ -384,7 +462,11 @@ object PlantaDao {
     /**
      * Obtiene estadísticas históricas de sensores SOLO para plantas de mi familia
      */
-    fun obtenerEstadisticasHistorialFamiliar(userId: Long, horas: Int, plantaId: Long = -1): Map<String, Float> {
+    fun obtenerEstadisticasHistorialFamiliar(
+        userId: Long,
+        horas: Int,
+        plantaId: Long = -1
+    ): Map<String, Float> {
         val stats = mutableMapOf<String, Float>()
         val conexion = MySqlConexion.getConexion()
 
@@ -445,7 +527,8 @@ object PlantaDao {
 
                 if ((stats["humedad"] ?: 0f) == 0f &&
                     (stats["temperatura"] ?: 0f) == 0f &&
-                    (stats["luz"] ?: 0f) == 0f) {
+                    (stats["luz"] ?: 0f) == 0f
+                ) {
                     return mapOf(
                         "humedad" to 65f,
                         "temperatura" to 22f,
@@ -454,7 +537,11 @@ object PlantaDao {
                 }
             }
         } catch (e: Exception) {
-            Log.e("PlantaDao", "Error obteniendo estadísticas históricas familiares: ${e.message}", e)
+            Log.e(
+                "PlantaDao",
+                "Error obteniendo estadísticas históricas familiares: ${e.message}",
+                e
+            )
             return mapOf("humedad" to 65f, "temperatura" to 22f, "luz" to 75f)
         }
 
@@ -494,20 +581,23 @@ object PlantaDao {
 
                 while (rsPlantas.next()) {
                     val plantaId = rsPlantas.getLong("id")
-                    val plantaNombre = rsPlantas.getString("nombre") ?: "Sin nombre"  // Ahora viene del alias
+                    val plantaNombre =
+                        rsPlantas.getString("nombre") ?: "Sin nombre"  // Ahora viene del alias
                     val plantaEspecie = rsPlantas.getString("especie") ?: ""
 
                     val datosSensores = obtenerDatosSensoresPlanta(plantaId)
 
-                    plantas.add(PlantaConDatos(
-                        id = plantaId,
-                        nombre = plantaNombre,
-                        especie = plantaEspecie,
-                        ubicacion = datosSensores["ubicacion"] as? String ?: "Sin ubicación",
-                        humedad = datosSensores["humedad"] as? Float ?: 0f,
-                        temperatura = datosSensores["temperatura"] as? Float ?: 0f,
-                        luz = datosSensores["luz"] as? Float ?: 0f
-                    ))
+                    plantas.add(
+                        PlantaConDatos(
+                            id = plantaId,
+                            nombre = plantaNombre,
+                            especie = plantaEspecie,
+                            ubicacion = datosSensores["ubicacion"] as? String ?: "Sin ubicación",
+                            humedad = datosSensores["humedad"] as? Float ?: 0f,
+                            temperatura = datosSensores["temperatura"] as? Float ?: 0f,
+                            luz = datosSensores["luz"] as? Float ?: 0f
+                        )
+                    )
                 }
 
                 rsPlantas.close()
@@ -623,7 +713,9 @@ object PlantaDao {
 
                     when {
                         tipo.contains("Humedad", ignoreCase = true) -> datos["humedad"] = valor
-                        tipo.contains("Temperatura", ignoreCase = true) -> datos["temperatura"] = valor
+                        tipo.contains("Temperatura", ignoreCase = true) -> datos["temperatura"] =
+                            valor
+
                         tipo.contains("Luz", ignoreCase = true) -> datos["luz"] = valor
                     }
                 }
@@ -697,7 +789,10 @@ object PlantaDao {
     /**
      * Obtiene historial de una planta específica (SIN verificación)
      */
-    fun obtenerHistorialPlanta(plantaId: Long, horas: Int = 24): Map<String, List<Pair<String, Float>>> {
+    fun obtenerHistorialPlanta(
+        plantaId: Long,
+        horas: Int = 24
+    ): Map<String, List<Pair<String, Float>>> {
         val historial = mutableMapOf<String, List<Pair<String, Float>>>()
         val conexion = MySqlConexion.getConexion()
 
@@ -720,7 +815,11 @@ object PlantaDao {
     /**
      * Obtiene historial de una planta específica (CON verificación)
      */
-    fun obtenerHistorialPlantaSeguro(userId: Long, plantaId: Long, horas: Int = 24): Map<String, List<Pair<String, Float>>> {
+    fun obtenerHistorialPlantaSeguro(
+        userId: Long,
+        plantaId: Long,
+        horas: Int = 24
+    ): Map<String, List<Pair<String, Float>>> {
         if (!verificarAccesoPlanta(userId, plantaId)) {
             Log.w("PlantaDao", "Usuario $userId no tiene acceso a planta $plantaId")
             return emptyMap()
@@ -769,9 +868,114 @@ object PlantaDao {
     }
 
     /**
-     * Inserta una nueva planta en la familia del usuario
+     * Inserta una nueva planta con todos los campos
      */
     fun insertarPlanta(planta: Planta, userId: Long): Boolean {
+        var insertado = false
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                // Obtener la familia del usuario
+                val familiaId = obtenerFamiliaIdDelUsuario(userId)
+
+                if (familiaId != -1L) {
+                    // LOGS DE DEPURACIÓN
+                    Log.d("PlantaDao", "=== INSERTANDO PLANTA ===")
+                    Log.d("PlantaDao", "Usuario ID: $userId")
+                    Log.d("PlantaDao", "Familia ID: $familiaId")
+                    Log.d("PlantaDao", "Nombre: ${planta.nombre}")
+                    Log.d("PlantaDao", "Especie: '${planta.especie}'")
+                    Log.d("PlantaDao", "Foto: '${planta.foto}'")
+                    Log.d("PlantaDao", "Descripción: ${planta.descripcion}")
+                    Log.d("PlantaDao", "Aspecto: ${planta.aspecto}")
+                    Log.d("PlantaDao", "Estado: ${planta.estado}")
+
+                    // SQL para insertar todos los campos
+                    val sqlInsert = """
+                INSERT INTO planta (
+                    nombrePersonalizado, 
+                    especie, 
+                    fecha_creacion, 
+                    descripcion, 
+                    familia_id,
+                    aspecto,
+                    estado,
+                    foto
+                )
+                VALUES (?, ?, NOW(), ?, ?, ?, ?, ?)
+                """
+
+                    Log.d("PlantaDao", "SQL: $sqlInsert")
+
+                    val stmt = conexion.prepareStatement(sqlInsert)
+
+                    // Establecer parámetros
+                    stmt.setString(1, planta.nombre)
+                    stmt.setString(2, planta.especie)
+                    stmt.setString(3, planta.descripcion)
+                    stmt.setLong(4, familiaId)
+                    stmt.setString(5, planta.aspecto)
+                    stmt.setString(6, planta.estado)
+
+                    // Manejar la foto
+                    if (planta.foto != null && planta.foto.isNotEmpty()) {
+                        stmt.setString(7, planta.foto)
+                        Log.d("PlantaDao", "Foto no vacía, insertando: '${planta.foto}'")
+                    } else {
+                        stmt.setNull(7, java.sql.Types.VARCHAR)
+                        Log.d("PlantaDao", "Foto vacía, insertando NULL")
+                    }
+
+                    // Ejecutar inserción
+                    val filas = stmt.executeUpdate()
+                    Log.d("PlantaDao", "Filas afectadas: $filas")
+
+                    if (filas > 0) {
+                        insertado = true
+
+                        // Actualizar contador de plantas en la familia
+                        val sqlUpdate = """
+                    UPDATE familia 
+                    SET cantidad_plantas = cantidad_plantas + 1 
+                    WHERE id = ?
+                    """
+                        val stmtUpdate = conexion.prepareStatement(sqlUpdate)
+                        stmtUpdate.setLong(1, familiaId)
+                        stmtUpdate.executeUpdate()
+                        stmtUpdate.close()
+
+                        Log.d("PlantaDao", "¡Planta creada exitosamente!")
+                    } else {
+                        Log.e("PlantaDao", "No se insertaron filas")
+                    }
+
+                    stmt.close()
+                } else {
+                    Log.e("PlantaDao", "Usuario $userId no tiene familia activa")
+                }
+                conexion.close()
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error al insertar planta: ${e.message}", e)
+
+            // Intentar versión básica si hay error
+            if (e.message?.contains("aspecto") == true ||
+                e.message?.contains("estado") == true ||
+                e.message?.contains("foto") == true
+            ) {
+
+                Log.d("PlantaDao", "Intentando inserción básica...")
+                return insertarPlantaBasica(planta, userId)
+            }
+        }
+        return insertado
+    }
+
+    /**
+     * Versión básica de inserción (sin estado, aspecto, foto)
+     */
+    private fun insertarPlantaBasica(planta: Planta, userId: Long): Boolean {
         var insertado = false
         val conexion = MySqlConexion.getConexion()
 
@@ -780,11 +984,19 @@ object PlantaDao {
                 val familiaId = obtenerFamiliaIdDelUsuario(userId)
 
                 if (familiaId != -1L) {
-                    // CORRECCIÓN: Usar nombrePersonalizado en lugar de nombre
+                    Log.d("PlantaDao", "Insertando versión básica (solo campos esenciales)")
+
                     val sqlInsert = """
-                        INSERT INTO planta (nombrePersonalizado, especie, fecha_creacion, descripcion, familia_id)
-                        VALUES (?, ?, NOW(), ?, ?)
-                    """
+                INSERT INTO planta (
+                    nombrePersonalizado, 
+                    especie, 
+                    fecha_creacion, 
+                    descripcion, 
+                    familia_id
+                )
+                VALUES (?, ?, NOW(), ?, ?)
+                """
+
                     val stmt = conexion.prepareStatement(sqlInsert)
                     stmt.setString(1, planta.nombre)
                     stmt.setString(2, planta.especie)
@@ -795,25 +1007,26 @@ object PlantaDao {
                     if (filas > 0) {
                         insertado = true
 
+                        // Actualizar contador de plantas
                         val sqlUpdate = """
-                            UPDATE familia 
-                            SET cantidad_plantas = cantidad_plantas + 1 
-                            WHERE id = ?
-                        """
+                    UPDATE familia 
+                    SET cantidad_plantas = cantidad_plantas + 1 
+                    WHERE id = ?
+                    """
                         val stmtUpdate = conexion.prepareStatement(sqlUpdate)
                         stmtUpdate.setLong(1, familiaId)
                         stmtUpdate.executeUpdate()
                         stmtUpdate.close()
+
+                        Log.d("PlantaDao", "Planta básica insertada exitosamente")
                     }
 
                     stmt.close()
                 }
                 conexion.close()
-
-                Log.d("PlantaDao", "Planta insertada: $insertado")
             }
         } catch (e: Exception) {
-            Log.e("PlantaDao", "Error al insertar planta: ${e.message}", e)
+            Log.e("PlantaDao", "Error en inserción básica: ${e.message}", e)
         }
         return insertado
     }
@@ -827,6 +1040,7 @@ object PlantaDao {
             estado == "Necesita agua" ||
                     estado == "Advertencia" ||
                     (humedad != null && humedad < 40) -> "warning"
+
             estado == "Saludable" || estado == "Excelente" -> "healthy"
             else -> "unknown"
         }
@@ -913,7 +1127,11 @@ object PlantaDao {
     /**
      * Obtiene datos históricos para gráficos SOLO de plantas de mi familia
      */
-    fun obtenerDatosHistoricosGraficoFamiliar(userId: Long, horas: Int, plantaId: Long = -1): Map<String, List<DataPointDAO>> {
+    fun obtenerDatosHistoricosGraficoFamiliar(
+        userId: Long,
+        horas: Int,
+        plantaId: Long = -1
+    ): Map<String, List<DataPointDAO>> {
         val datos = mutableMapOf<String, List<DataPointDAO>>()
 
         val familiaId = obtenerFamiliaIdDelUsuario(userId)
@@ -922,11 +1140,16 @@ object PlantaDao {
             return datos
         }
 
-        datos["humedad"] = obtenerDatosSensorHistoricoFamiliar(familiaId, horas, plantaId, "Humedad")
-        datos["temperatura"] = obtenerDatosSensorHistoricoFamiliar(familiaId, horas, plantaId, "Temperatura")
+        datos["humedad"] =
+            obtenerDatosSensorHistoricoFamiliar(familiaId, horas, plantaId, "Humedad")
+        datos["temperatura"] =
+            obtenerDatosSensorHistoricoFamiliar(familiaId, horas, plantaId, "Temperatura")
         datos["luz"] = obtenerDatosSensorHistoricoFamiliar(familiaId, horas, plantaId, "Luz")
 
-        Log.d("PlantaDao", "Datos gráfico familiar: Humedad=${datos["humedad"]?.size}, Temp=${datos["temperatura"]?.size}, Luz=${datos["luz"]?.size}")
+        Log.d(
+            "PlantaDao",
+            "Datos gráfico familiar: Humedad=${datos["humedad"]?.size}, Temp=${datos["temperatura"]?.size}, Luz=${datos["luz"]?.size}"
+        )
 
         return datos
     }
@@ -938,7 +1161,11 @@ object PlantaDao {
     /**
      * Obtiene historial para un tipo de sensor específico
      */
-    private fun obtenerHistorialSensor(plantaId: Long, tipoSensor: String, horas: Int): List<Pair<String, Float>> {
+    private fun obtenerHistorialSensor(
+        plantaId: Long,
+        tipoSensor: String,
+        horas: Int
+    ): List<Pair<String, Float>> {
         val datos = mutableListOf<Pair<String, Float>>()
         val conexion = MySqlConexion.getConexion()
 
@@ -984,7 +1211,12 @@ object PlantaDao {
     /**
      * Obtiene datos históricos de un sensor específico para plantas de la familia
      */
-    private fun obtenerDatosSensorHistoricoFamiliar(familiaId: Long, horas: Int, plantaId: Long, tipoSensor: String): List<DataPointDAO> {
+    private fun obtenerDatosSensorHistoricoFamiliar(
+        familiaId: Long,
+        horas: Int,
+        plantaId: Long,
+        tipoSensor: String
+    ): List<DataPointDAO> {
         val datos = mutableListOf<DataPointDAO>()
         val conexion = MySqlConexion.getConexion()
 
@@ -1040,10 +1272,12 @@ object PlantaDao {
                 val rs = stmt.executeQuery()
 
                 while (rs.next()) {
-                    datos.add(DataPointDAO(
-                        label = rs.getString("hora_grupo") ?: "",
-                        value = rs.getFloat("valor_promedio")
-                    ))
+                    datos.add(
+                        DataPointDAO(
+                            label = rs.getString("hora_grupo") ?: "",
+                            value = rs.getFloat("valor_promedio")
+                        )
+                    )
                 }
 
                 rs.close()
@@ -1087,10 +1321,12 @@ object PlantaDao {
 
         for (i in 0 until puntos) {
             val variacion = (Math.random() * 20 - 10).toFloat()
-            datos.add(DataPointDAO(
-                label = labels[i % labels.size],
-                value = baseValue + variacion
-            ))
+            datos.add(
+                DataPointDAO(
+                    label = labels[i % labels.size],
+                    value = baseValue + variacion
+                )
+            )
         }
 
         return datos
@@ -1098,7 +1334,17 @@ object PlantaDao {
 
     private fun generarEtiquetasEjemplo(horas: Int, puntos: Int): List<String> {
         return when {
-            horas <= 24 -> listOf("00:00", "03:00", "06:00", "09:00", "12:00", "15:00", "18:00", "21:00")
+            horas <= 24 -> listOf(
+                "00:00",
+                "03:00",
+                "06:00",
+                "09:00",
+                "12:00",
+                "15:00",
+                "18:00",
+                "21:00"
+            )
+
             horas <= 168 -> listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
             else -> listOf("01", "05", "10", "15", "20", "25", "30")
         }.take(puntos)
@@ -1166,7 +1412,11 @@ object PlantaDao {
                     val unidad = rs.getString("unidad_medida") ?: ""
 
                     // Determinar color y estado según tu diseño
-                    val (colorRes, estadoTexto, progress) = determinarEstadoUI(estadoId, tipo, valor)
+                    val (colorRes, estadoTexto, progress) = determinarEstadoUI(
+                        estadoId,
+                        tipo,
+                        valor
+                    )
 
                     // Determinar icono
                     val (iconRes, bgColorRes) = determinarIconoYFondo(tipo)
@@ -1287,7 +1537,11 @@ object PlantaDao {
     /**
      * Determina el estado UI según tu diseño (color, texto, progreso)
      */
-    private fun determinarEstadoUI(estadoId: Int, tipo: String, valor: Float): Triple<Int, String, Int> {
+    private fun determinarEstadoUI(
+        estadoId: Int,
+        tipo: String,
+        valor: Float
+    ): Triple<Int, String, Int> {
         return when {
             estadoId == 4 -> Triple(R.color.sensor_red, "Error", 0)
             estadoId == 3 -> Triple(R.color.sensor_orange, "Mantenimiento", 0)
@@ -1298,6 +1552,7 @@ object PlantaDao {
                     Triple(R.color.sensor_yellow, "Advertencia", calcularProgress(tipo, valor))
                 }
             }
+
             else -> Triple(R.color.text_gray, "Inactivo", 0)
         }
     }
@@ -1335,7 +1590,11 @@ object PlantaDao {
     private fun determinarIconoYFondo(tipo: String): Pair<Int, Int> {
         return when {
             tipo.contains("Temperatura") -> Pair(R.drawable.ic_temp, R.drawable.bg_icon_sensor_red)
-            tipo.contains("Humedad Suelo") -> Pair(R.drawable.ic_droplet, R.drawable.bg_icon_sensor_blue)
+            tipo.contains("Humedad Suelo") -> Pair(
+                R.drawable.ic_droplet,
+                R.drawable.bg_icon_sensor_blue
+            )
+
             tipo.contains("Humedad Aire") -> Pair(R.drawable.ic_air, R.drawable.bg_icon_sensor_cyan)
             tipo.contains("Luz") -> Pair(R.drawable.ic_sun, R.drawable.bg_icon_sensor_yellow)
             tipo.contains("pH") -> Pair(R.drawable.ic_ph, R.drawable.bg_icon_sensor_purple)

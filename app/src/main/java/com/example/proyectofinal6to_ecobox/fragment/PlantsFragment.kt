@@ -1,7 +1,7 @@
 package com.example.proyectofinal6to_ecobox.fragment
 
 import android.content.Context
-import android.content.Intent // <--- Importante
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -14,9 +14,9 @@ import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.adapter.PlantAdapter
 import com.example.proyectofinal6to_ecobox.data.adapter.PlantAdapter.PlantaConDatos
 import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
-import com.example.proyectofinal6to_ecobox.presentacion.ui.AddPlantActivity // <--- Importante
+import com.example.proyectofinal6to_ecobox.presentacion.ui.CrearPlantaActivity
 import com.example.proyectofinal6to_ecobox.presentacion.ui.PlantDetailActivity
-import com.google.android.material.floatingactionbutton.FloatingActionButton // <--- Importante
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class PlantsFragment : Fragment(R.layout.fragment_plants) {
 
@@ -49,13 +49,10 @@ class PlantsFragment : Fragment(R.layout.fragment_plants) {
             }
         })
 
-        // ---------------------------------------------------------
-        // NUEVO: Configurar el botón flotante (+)
-        // ---------------------------------------------------------
+        // Configurar FAB
         val fab = view.findViewById<FloatingActionButton>(R.id.fabAddPlant)
         fab.setOnClickListener {
-            // Abrir la pantalla de agregar planta
-            startActivity(Intent(requireContext(), AddPlantActivity::class.java))
+            startActivity(Intent(requireContext(), CrearPlantaActivity::class.java))
         }
 
         cargarPlantas(userId)
@@ -72,7 +69,7 @@ class PlantsFragment : Fragment(R.layout.fragment_plants) {
                         humedadSuelo = pc.humedad,
                         temperatura = pc.temperatura,
                         luz = pc.luz,
-                        nivelAgua = pc.humedad.toInt(),
+                        nivelAgua = pc.calcularNivelAgua(), // Usar la función correcta
                         estado = pc.determinarEstadoUI(),
                         ultimoRiego = pc.ultimoRiego
                     )
@@ -88,9 +85,7 @@ class PlantsFragment : Fragment(R.layout.fragment_plants) {
 
     override fun onResume() {
         super.onResume()
-        // Recargar lista al volver (por si agregaste una planta nueva)
         val prefs = requireContext().getSharedPreferences("ecobox_prefs", Context.MODE_PRIVATE)
         cargarPlantas(prefs.getLong("user_id", -1))
     }
-
 }

@@ -8,44 +8,62 @@ public class Planta {
     private String nombre;
     private String especie;
 
-    @SerializedName("fecha_creación")
-    private String fechacreacion;
+    @SerializedName("fecha_creacion")
+    private String fechaCreacion;
 
     private String descripcion;
 
     @SerializedName("familia_id")
     private long familiaId;
 
-    private String ubicacion; // Nuevo campo
+    private String ubicacion;
+    private String aspecto;
+    private String estado;
+    private String foto;
 
     public Planta() {
+        this.aspecto = "normal";
+        this.estado = "normal";
+        this.foto = "";
+        this.ubicacion = "";
     }
 
-    // Constructor con 6 parámetros (sin ubicacion)
-    public Planta(long id, String nombre, String especie, String fechacreacion,
-                  String descripcion, long familiaId) {
+    // Constructor con 10 parámetros (todos los campos)
+    public Planta(long id, String nombre, String especie, String fechaCreacion,
+                  String descripcion, long familiaId, String ubicacion,
+                  String aspecto, String estado, String foto) {
         this.id = id;
         this.nombre = nombre;
         this.especie = especie;
-        this.fechacreacion = fechacreacion;
-        this.descripcion = descripcion;
-        this.familiaId = familiaId;
-        this.ubicacion = ""; // Valor por defecto
-    }
-
-    // Constructor con 7 parámetros (con ubicacion)
-    public Planta(long id, String nombre, String especie, String fechacreacion,
-                  String descripcion, long familiaId, String ubicacion) {
-        this.id = id;
-        this.nombre = nombre;
-        this.especie = especie;
-        this.fechacreacion = fechacreacion;
+        this.fechaCreacion = fechaCreacion;
         this.descripcion = descripcion;
         this.familiaId = familiaId;
         this.ubicacion = ubicacion;
+        this.aspecto = aspecto;
+        this.estado = estado;
+        this.foto = foto;
     }
 
-    // Getters y Setters
+    // Constructor con 7 parámetros (backward compatible - EL QUE USAS ACTUALMENTE)
+    public Planta(long id, String nombre, String especie, String fechaCreacion,
+                  String descripcion, long familiaId, String ubicacion) {
+        this(id, nombre, especie, fechaCreacion, descripcion, familiaId,
+                ubicacion, "normal", "normal", "");  // FOTO vacía por defecto
+    }
+
+    // Constructor con 6 parámetros (backward compatible)
+    public Planta(long id, String nombre, String especie, String fechaCreacion,
+                  String descripcion, long familiaId) {
+        this(id, nombre, especie, fechaCreacion, descripcion, familiaId,
+                "", "normal", "normal", "");
+    }
+
+    // MÉTODO NUEVO - ¡IMPORTANTE!
+    public boolean tieneFoto() {
+        return foto != null && !foto.isEmpty();
+    }
+
+    // Getters y Setters (todos, incluyendo foto)
     public long getId() {
         return id;
     }
@@ -70,12 +88,12 @@ public class Planta {
         this.especie = especie;
     }
 
-    public String Fechacreacion() {
-        return fechacreacion;
+    public String getFechaCreacion() {
+        return fechaCreacion;
     }
 
-    public void setFechaCreacion(String fechacreacion) {
-        this.fechacreacion = fechacreacion;
+    public void setFechaCreacion(String fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
     }
 
     public String getDescripcion() {
@@ -94,12 +112,51 @@ public class Planta {
         this.familiaId = familiaId;
     }
 
-    // Nuevos getter y setter para ubicacion
     public String getUbicacion() {
         return ubicacion;
     }
 
     public void setUbicacion(String ubicacion) {
         this.ubicacion = ubicacion;
+    }
+
+    public String getAspecto() {
+        return aspecto;
+    }
+
+    public void setAspecto(String aspecto) {
+        this.aspecto = aspecto;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public String getFoto() {
+        return foto;
+    }
+
+    public void setFoto(String foto) {
+        this.foto = foto;
+    }
+
+    @Override
+    public String toString() {
+        return "Planta{" +
+                "id=" + id +
+                ", nombre='" + nombre + '\'' +
+                ", especie='" + especie + '\'' +
+                ", fechaCreacion='" + fechaCreacion + '\'' +
+                ", descripcion='" + descripcion + '\'' +
+                ", familiaId=" + familiaId +
+                ", ubicacion='" + ubicacion + '\'' +
+                ", aspecto='" + aspecto + '\'' +
+                ", estado='" + estado + '\'' +
+                ", foto='" + foto + '\'' +
+                '}';
     }
 }

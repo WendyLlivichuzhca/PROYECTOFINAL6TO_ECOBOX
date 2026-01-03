@@ -209,4 +209,53 @@ object FamiliaDao {
         }
         return lista
     }
+
+    // Agrega esto al final de tu FamiliaDao.kt existente (antes del cierre del objeto)
+
+    // Función para obtener familias simples (solo id y nombre)
+    fun obtenerFamiliasSimplesPorUsuario(usuarioId: Long): List<FamiliaSimple> {
+        val lista = mutableListOf<FamiliaSimple>()
+        val sql = """
+        SELECT f.id, f.nombre
+        FROM familia f
+        JOIN familia_usuario fu ON f.id = fu.familia_id
+        WHERE fu.usuario_id = ? AND fu.activo = 1
+        ORDER BY f.nombre ASC
+    """
+
+        var conn: Connection? = null
+        try {
+            conn = MySqlConexion.getConexion()
+            if (conn != null) {
+                val ps = conn.prepareStatement(sql)
+                ps.setLong(1, usuarioId)
+                val rs = ps.executeQuery()
+
+                while (rs.next()) {
+                    lista.add(
+                        FamiliaSimple(
+                            id = rs.getLong("id"),
+                            nombre = rs.getString("nombre") ?: "Sin nombre"
+                        )
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            conn?.close()
+        }
+        return lista
+    }
+
+    // Data class para familias simples (solo para el dropdown)
+    data class FamiliaSimple(
+        val id: Long,
+        val nombre: String
+    ) {
+        // Esto es lo que se mostrará en el dropdown
+        override fun toString(): String {
+            return nombre
+        }
+    }
 }

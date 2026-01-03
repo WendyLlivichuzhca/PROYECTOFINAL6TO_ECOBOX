@@ -77,7 +77,7 @@
             android:name=".presentacion.ui.MainActivity"
             android:exported="false" />
         <activity
-            android:name=".presentacion.ui.AddPlantActivity"
+            android:name=".presentacion.ui.CrearPlantaActivity"
             android:exported="false" />
         <!-- Dentro de <application> -->
         <provider
