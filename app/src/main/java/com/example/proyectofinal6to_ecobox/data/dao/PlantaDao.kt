@@ -69,7 +69,6 @@ object PlantaDao {
 
     // =========================================================================
     // FUNCIONES PRINCIPALES PARA DASHBOARD/HISTORIAL GENERAL
-    // (SOLO plantas de MI familia)
     // =========================================================================
 
     /**
@@ -81,7 +80,6 @@ object PlantaDao {
 
         try {
             if (conexion != null) {
-                // AGREGAR LOS CAMPOS faltantes: foto, estado, aspecto
                 val sql = """
                 SELECT 
                     p.id, 
@@ -90,9 +88,9 @@ object PlantaDao {
                     p.fecha_creacion, 
                     p.descripcion, 
                     p.familia_id,
-                    p.foto,           -- NUEVO: Campo de foto
-                    p.estado,         -- NUEVO: Campo de estado
-                    p.aspecto         -- NUEVO: Campo de aspecto
+                    p.foto,
+                    p.estado,
+                    p.aspecto
                 FROM planta p
                 INNER JOIN familia_usuario fu ON p.familia_id = fu.familia_id
                 WHERE fu.usuario_id = ? AND fu.activo = 1
@@ -112,11 +110,10 @@ object PlantaDao {
                         rs.getString("fecha_creacion") ?: "",
                         rs.getString("descripcion") ?: "",
                         rs.getLong("familia_id"),
-                        "Sin ubicación",  // Esto es un valor por defecto
-                        // Los siguientes 3 parámetros van automáticamente al constructor de 10
-                        rs.getString("aspecto") ?: "normal",    // De la tabla
-                        rs.getString("estado") ?: "normal",     // De la tabla
-                        rs.getString("foto") ?: ""              // De la tabla
+                        "Sin ubicación",
+                        rs.getString("aspecto") ?: "normal",
+                        rs.getString("estado") ?: "normal",
+                        rs.getString("foto") ?: ""
                     )
                     listaPlantas.add(planta)
                 }
@@ -128,16 +125,7 @@ object PlantaDao {
             }
         } catch (e: Exception) {
             Log.e("PlantaDao", "Error obteniendo plantas: ${e.message}", e)
-
-            // Manejo de error temporal
-            if (e.message?.contains("foto") == true ||
-                e.message?.contains("aspecto") == true ||
-                e.message?.contains("estado") == true
-            ) {
-
-                Log.d("PlantaDao", "Intentando con versión anterior de la consulta...")
-                return obtenerPlantasPorUsuarioVersionAnterior(userId)
-            }
+            return obtenerPlantasPorUsuarioVersionAnterior(userId)
         }
         return listaPlantas
     }
@@ -248,13 +236,11 @@ object PlantaDao {
                 rsSalud.close()
                 stmtSalud.close()
 
-                // 3. Plantas críticas (CORREGIDO DEFINITIVAMENTE)
+                // 3. Plantas críticas
                 val sqlCriticas = """
                     SELECT COUNT(DISTINCT p.id) as criticas
                     FROM planta p
                     INNER JOIN familia_usuario fu ON p.familia_id = fu.familia_id
-                    
-                    -- Join para obtener el último estado (sin cambios)
                     LEFT JOIN (
                         SELECT sep1.* FROM seguimiento_estado_planta sep1
                         INNER JOIN (
@@ -263,25 +249,15 @@ object PlantaDao {
                             GROUP BY planta_id
                         ) sep2 ON sep1.planta_id = sep2.planta_id AND sep1.fecha_registro = sep2.max_fecha
                     ) ult_seg ON p.id = ult_seg.planta_id
-                    
-                    -- Join para el sensor de humedad (sin cambios)
                     LEFT JOIN main_sensor ms ON p.id = ms.planta_id AND ms.tipo_sensor_id = 2
                     LEFT JOIN medicion m ON ms.id = m.sensor_id 
                       AND m.fecha = (SELECT MAX(fecha) FROM medicion WHERE sensor_id = ms.id)
-                    
-                    -- Unimos notificaciones solo por usuario y estado 'no leída'
                     LEFT JOIN notificacion n ON n.usuario_id = fu.usuario_id AND n.leida = 0
-                      
                     WHERE fu.usuario_id = ? 
                       AND fu.activo = 1
                       AND (
-                          -- Condición A: Estado explícito reportado
                           ult_seg.estado IN ('Necesita agua', 'Advertencia', 'Crítico')
-                          
-                          -- Condición B: Sensor de humedad bajo (< 40)
                           OR (m.valor IS NOT NULL AND m.valor < 40)
-                          
-                          -- Condición C: Existe notificación relevante para ESTA planta
                           OR (
                               n.id IS NOT NULL 
                               AND n.mensaje LIKE CONCAT('%', p.nombrePersonalizado, '%')
@@ -563,7 +539,6 @@ object PlantaDao {
                     return plantas
                 }
 
-                // CORRECCIÓN: Usar alias para nombrePersonalizado
                 val sqlPlantas = """
                     SELECT 
                         p.id,
@@ -581,8 +556,7 @@ object PlantaDao {
 
                 while (rsPlantas.next()) {
                     val plantaId = rsPlantas.getLong("id")
-                    val plantaNombre =
-                        rsPlantas.getString("nombre") ?: "Sin nombre"  // Ahora viene del alias
+                    val plantaNombre = rsPlantas.getString("nombre") ?: "Sin nombre"
                     val plantaEspecie = rsPlantas.getString("especie") ?: ""
 
                     val datosSensores = obtenerDatosSensoresPlanta(plantaId)
@@ -615,7 +589,6 @@ object PlantaDao {
 
     // =========================================================================
     // FUNCIONES PARA DETALLE DE PLANTA ESPECÍFICA
-    // (Con verificación de acceso)
     // =========================================================================
 
     /**
@@ -654,6 +627,240 @@ object PlantaDao {
         }
 
         return false
+    }
+
+    /**
+     * Obtiene una planta por su ID
+     */
+    fun obtenerPlantaPorId(plantaId: Long, userId: Long): Planta? {
+        var planta: Planta? = null
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                // Primero verificar acceso
+                if (!verificarAccesoPlanta(userId, plantaId)) {
+                    return null
+                }
+
+                val sql = """
+                SELECT 
+                    id, 
+                    nombrePersonalizado as nombre, 
+                    especie, 
+                    fecha_creacion, 
+                    descripcion, 
+                    familia_id,
+                    foto,
+                    estado,
+                    aspecto
+                FROM planta 
+                WHERE id = ?
+            """
+
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, plantaId)
+                val rs = stmt.executeQuery()
+
+                if (rs.next()) {
+                    planta = Planta(
+                        rs.getLong("id"),
+                        rs.getString("nombre") ?: "",
+                        rs.getString("especie") ?: "",
+                        rs.getString("fecha_creacion") ?: "",
+                        rs.getString("descripcion") ?: "",
+                        rs.getLong("familia_id"),
+                        "", // ubicación vacía (la obtienes de otra tabla)
+                        rs.getString("aspecto") ?: "normal",
+                        rs.getString("estado") ?: "normal",
+                        rs.getString("foto") ?: ""
+                    )
+                }
+
+                rs.close()
+                stmt.close()
+                conexion.close()
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error obteniendo planta por ID: ${e.message}", e)
+        }
+
+        return planta
+    }
+
+    // =========================================================================
+// FUNCIONES PARA ELIMINAR PLANTA
+// =========================================================================
+
+    /**
+     * Obtiene la cantidad de sensores asociados a una planta
+     */
+    fun obtenerCantidadSensoresPorPlanta(plantaId: Long): Int {
+        var cantidad = 0
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                val sql = """
+                SELECT COUNT(*) as total
+                FROM main_sensor
+                WHERE planta_id = ? AND activo = 1
+            """
+
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, plantaId)
+                val rs = stmt.executeQuery()
+
+                if (rs.next()) {
+                    cantidad = rs.getInt("total")
+                }
+
+                rs.close()
+                stmt.close()
+                conexion.close()
+
+                Log.d("PlantaDao", "Sensores encontrados para planta $plantaId: $cantidad")
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error obteniendo cantidad de sensores: ${e.message}", e)
+        }
+
+        return cantidad
+    }
+
+    /**
+     * Elimina completamente una planta y todos sus datos asociados
+     */
+    fun eliminarPlantaCompleta(plantaId: Long, userId: Long): Boolean {
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                // Primero verificar acceso
+                if (!verificarAccesoPlanta(userId, plantaId)) {
+                    Log.e("PlantaDao", "Usuario $userId no tiene acceso a planta $plantaId")
+                    return false
+                }
+
+                // Obtener familia_id para actualizar contador
+                val sqlFamilia = """
+                SELECT familia_id 
+                FROM planta 
+                WHERE id = ?
+            """
+                val stmtFamilia = conexion.prepareStatement(sqlFamilia)
+                stmtFamilia.setLong(1, plantaId)
+                val rsFamilia = stmtFamilia.executeQuery()
+                val familiaId = if (rsFamilia.next()) rsFamilia.getLong("familia_id") else -1L
+                rsFamilia.close()
+                stmtFamilia.close()
+
+                // Iniciar transacción
+                conexion.autoCommit = false
+
+                try {
+                    // 1. Eliminar mediciones de sensores de esta planta
+                    val sqlDeleteMediciones = """
+                    DELETE m FROM medicion m
+                    INNER JOIN main_sensor ms ON m.sensor_id = ms.id
+                    WHERE ms.planta_id = ?
+                """
+                    val stmtMediciones = conexion.prepareStatement(sqlDeleteMediciones)
+                    stmtMediciones.setLong(1, plantaId)
+                    stmtMediciones.executeUpdate()
+                    stmtMediciones.close()
+
+                    // 2. Eliminar sensores
+                    val sqlDeleteSensores = """
+                    DELETE FROM main_sensor WHERE planta_id = ?
+                """
+                    val stmtSensores = conexion.prepareStatement(sqlDeleteSensores)
+                    stmtSensores.setLong(1, plantaId)
+                    stmtSensores.executeUpdate()
+                    stmtSensores.close()
+
+                    // 3. Eliminar riegos
+                    val sqlDeleteRiegos = """
+                    DELETE FROM riego WHERE planta_id = ?
+                """
+                    val stmtRiegos = conexion.prepareStatement(sqlDeleteRiegos)
+                    stmtRiegos.setLong(1, plantaId)
+                    stmtRiegos.executeUpdate()
+                    stmtRiegos.close()
+
+                    // 4. Eliminar seguimiento de estado
+                    val sqlDeleteSeguimiento = """
+                    DELETE FROM seguimiento_estado_planta WHERE planta_id = ?
+                """
+                    val stmtSeguimiento = conexion.prepareStatement(sqlDeleteSeguimiento)
+                    stmtSeguimiento.setLong(1, plantaId)
+                    stmtSeguimiento.executeUpdate()
+                    stmtSeguimiento.close()
+
+                    // 5. Eliminar la planta
+                    val sqlDeletePlanta = """
+                    DELETE FROM planta WHERE id = ?
+                """
+                    val stmtPlanta = conexion.prepareStatement(sqlDeletePlanta)
+                    stmtPlanta.setLong(1, plantaId)
+                    val filasEliminadas = stmtPlanta.executeUpdate()
+                    stmtPlanta.close()
+
+                    // 6. Actualizar contador de la familia si es necesario
+                    if (familiaId != -1L && filasEliminadas > 0) {
+                        val sqlUpdateFamilia = """
+                        UPDATE familia 
+                        SET cantidad_plantas = GREATEST(cantidad_plantas - 1, 0)
+                        WHERE id = ?
+                    """
+                        val stmtUpdate = conexion.prepareStatement(sqlUpdateFamilia)
+                        stmtUpdate.setLong(1, familiaId)
+                        stmtUpdate.executeUpdate()
+                        stmtUpdate.close()
+                    }
+
+                    // Confirmar transacción
+                    conexion.commit()
+
+                    Log.d("PlantaDao", "Planta $plantaId eliminada exitosamente. Filas afectadas: $filasEliminadas")
+                    return filasEliminadas > 0
+
+                } catch (e: Exception) {
+                    // Revertir en caso de error
+                    conexion.rollback()
+                    throw e
+                } finally {
+                    conexion.autoCommit = true
+                    conexion.close()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error eliminando planta completa: ${e.message}", e)
+        }
+
+        return false
+    }
+
+    /**
+     * Obtiene información básica para mostrar en el diálogo de eliminación
+     */
+    fun obtenerInfoParaDialogoEliminar(plantaId: Long, userId: Long): Map<String, Any> {
+        val info = mutableMapOf<String, Any>()
+
+        try {
+            val planta = obtenerPlantaPorId(plantaId, userId)
+            val sensorCount = obtenerCantidadSensoresPorPlanta(plantaId)
+
+            info["nombre"] = planta?.nombre ?: "Planta"
+            info["id"] = plantaId
+            info["sensor_count"] = sensorCount
+            info["tiene_acceso"] = planta != null
+
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error obteniendo info para diálogo: ${e.message}", e)
+        }
+
+        return info
     }
 
     /**
@@ -876,11 +1083,9 @@ object PlantaDao {
 
         try {
             if (conexion != null) {
-                // Obtener la familia del usuario
                 val familiaId = obtenerFamiliaIdDelUsuario(userId)
 
                 if (familiaId != -1L) {
-                    // LOGS DE DEPURACIÓN
                     Log.d("PlantaDao", "=== INSERTANDO PLANTA ===")
                     Log.d("PlantaDao", "Usuario ID: $userId")
                     Log.d("PlantaDao", "Familia ID: $familiaId")
@@ -891,7 +1096,6 @@ object PlantaDao {
                     Log.d("PlantaDao", "Aspecto: ${planta.aspecto}")
                     Log.d("PlantaDao", "Estado: ${planta.estado}")
 
-                    // SQL para insertar todos los campos
                     val sqlInsert = """
                 INSERT INTO planta (
                     nombrePersonalizado, 
@@ -910,7 +1114,6 @@ object PlantaDao {
 
                     val stmt = conexion.prepareStatement(sqlInsert)
 
-                    // Establecer parámetros
                     stmt.setString(1, planta.nombre)
                     stmt.setString(2, planta.especie)
                     stmt.setString(3, planta.descripcion)
@@ -918,7 +1121,6 @@ object PlantaDao {
                     stmt.setString(5, planta.aspecto)
                     stmt.setString(6, planta.estado)
 
-                    // Manejar la foto
                     if (planta.foto != null && planta.foto.isNotEmpty()) {
                         stmt.setString(7, planta.foto)
                         Log.d("PlantaDao", "Foto no vacía, insertando: '${planta.foto}'")
@@ -927,14 +1129,12 @@ object PlantaDao {
                         Log.d("PlantaDao", "Foto vacía, insertando NULL")
                     }
 
-                    // Ejecutar inserción
                     val filas = stmt.executeUpdate()
                     Log.d("PlantaDao", "Filas afectadas: $filas")
 
                     if (filas > 0) {
                         insertado = true
 
-                        // Actualizar contador de plantas en la familia
                         val sqlUpdate = """
                     UPDATE familia 
                     SET cantidad_plantas = cantidad_plantas + 1 
@@ -959,7 +1159,6 @@ object PlantaDao {
         } catch (e: Exception) {
             Log.e("PlantaDao", "Error al insertar planta: ${e.message}", e)
 
-            // Intentar versión básica si hay error
             if (e.message?.contains("aspecto") == true ||
                 e.message?.contains("estado") == true ||
                 e.message?.contains("foto") == true
@@ -1007,7 +1206,6 @@ object PlantaDao {
                     if (filas > 0) {
                         insertado = true
 
-                        // Actualizar contador de plantas
                         val sqlUpdate = """
                     UPDATE familia 
                     SET cantidad_plantas = cantidad_plantas + 1 
@@ -1152,6 +1350,177 @@ object PlantaDao {
         )
 
         return datos
+    }
+
+    // =========================================================================
+    // NUEVAS FUNCIONES PARA EDITAR PLANTA
+    // =========================================================================
+
+    /**
+     * Actualiza una planta existente
+     */
+    fun actualizarPlanta(planta: Planta, userId: Long): Boolean {
+        var actualizado = false
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                // Primero verificar que el usuario tiene acceso a esta planta
+                if (!verificarAccesoPlanta(userId, planta.id)) {
+                    Log.e("PlantaDao", "Usuario $userId no tiene acceso a planta ${planta.id}")
+                    return false
+                }
+
+                Log.d("PlantaDao", "=== ACTUALIZANDO PLANTA ===")
+                Log.d("PlantaDao", "Planta ID: ${planta.id}")
+                Log.d("PlantaDao", "Nombre: ${planta.nombre}")
+                Log.d("PlantaDao", "Especie: '${planta.especie}'")
+                Log.d("PlantaDao", "Estado: ${planta.estado}")
+                Log.d("PlantaDao", "Aspecto: ${planta.aspecto}")
+                Log.d("PlantaDao", "Foto: '${planta.foto}'")
+                Log.d("PlantaDao", "Descripción: ${planta.descripcion}")
+
+                val sqlUpdate = """
+                    UPDATE planta 
+                    SET 
+                        nombrePersonalizado = ?, 
+                        especie = ?, 
+                        descripcion = ?,
+                        aspecto = ?,
+                        estado = ?,
+                        foto = ?
+                    WHERE id = ?
+                """
+
+                Log.d("PlantaDao", "SQL Update: $sqlUpdate")
+
+                val stmt = conexion.prepareStatement(sqlUpdate)
+
+                stmt.setString(1, planta.nombre)
+                stmt.setString(2, planta.especie)
+                stmt.setString(3, planta.descripcion)
+                stmt.setString(4, planta.aspecto)
+                stmt.setString(5, planta.estado)
+
+                if (planta.foto != null && planta.foto.isNotEmpty()) {
+                    stmt.setString(6, planta.foto)
+                    Log.d("PlantaDao", "Foto no vacía: '${planta.foto}'")
+                } else {
+                    stmt.setNull(6, java.sql.Types.VARCHAR)
+                    Log.d("PlantaDao", "Foto vacía, insertando NULL")
+                }
+
+                stmt.setLong(7, planta.id)
+
+                val filas = stmt.executeUpdate()
+                Log.d("PlantaDao", "Filas afectadas en update: $filas")
+
+                if (filas > 0) {
+                    actualizado = true
+                    Log.d("PlantaDao", "¡Planta actualizada exitosamente!")
+
+                    // Registrar en historial de estado si cambió
+                    if (planta.estado != "normal") {
+                        registrarCambioEstado(planta.id, planta.estado, "Actualizado desde app móvil")
+                    }
+                } else {
+                    Log.e("PlantaDao", "No se actualizaron filas - planta no encontrada")
+                }
+
+                stmt.close()
+                conexion.close()
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error al actualizar planta: ${e.message}", e)
+
+            if (e.message?.contains("aspecto") == true ||
+                e.message?.contains("estado") == true ||
+                e.message?.contains("foto") == true) {
+
+                Log.d("PlantaDao", "Intentando actualización básica...")
+                return actualizarPlantaBasica(planta, userId)
+            }
+        }
+        return actualizado
+    }
+
+    /**
+     * Versión básica de actualización (sin estado, aspecto, foto)
+     */
+    private fun actualizarPlantaBasica(planta: Planta, userId: Long): Boolean {
+        var actualizado = false
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                if (!verificarAccesoPlanta(userId, planta.id)) {
+                    return false
+                }
+
+                Log.d("PlantaDao", "Actualizando versión básica")
+
+                val sqlUpdate = """
+                    UPDATE planta 
+                    SET 
+                        nombrePersonalizado = ?, 
+                        especie = ?, 
+                        descripcion = ?
+                    WHERE id = ?
+                """
+
+                val stmt = conexion.prepareStatement(sqlUpdate)
+                stmt.setString(1, planta.nombre)
+                stmt.setString(2, planta.especie)
+                stmt.setString(3, planta.descripcion)
+                stmt.setLong(4, planta.id)
+
+                val filas = stmt.executeUpdate()
+                if (filas > 0) {
+                    actualizado = true
+                    Log.d("PlantaDao", "Planta básica actualizada exitosamente")
+                }
+
+                stmt.close()
+                conexion.close()
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error en actualización básica: ${e.message}", e)
+        }
+        return actualizado
+    }
+
+    /**
+     * Registra un cambio de estado en el historial
+     */
+    private fun registrarCambioEstado(plantaId: Long, estado: String, observaciones: String): Boolean {
+        var registrado = false
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                val sql = """
+                    INSERT INTO seguimiento_estado_planta (planta_id, estado, observaciones, fecha_registro)
+                    VALUES (?, ?, ?, NOW())
+                """
+
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, plantaId)
+                stmt.setString(2, estado)
+                stmt.setString(3, observaciones)
+
+                val filas = stmt.executeUpdate()
+                if (filas > 0) {
+                    registrado = true
+                    Log.d("PlantaDao", "Cambio de estado registrado para planta $plantaId")
+                }
+
+                stmt.close()
+                conexion.close()
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error registrando cambio de estado: ${e.message}", e)
+        }
+        return registrado
     }
 
     // =========================================================================
@@ -1356,7 +1725,6 @@ object PlantaDao {
 
     /**
      * Obtiene sensores de MI familia para mostrar en tu RecyclerView
-     * Retorna List<Map> con las claves exactas que necesita tu item_sensor.xml
      */
     fun obtenerSensoresMiFamiliaParaUI(userId: Long): List<Map<String, Any>> {
         val sensores = mutableListOf<Map<String, Any>>()
@@ -1364,7 +1732,6 @@ object PlantaDao {
 
         try {
             if (conexion != null) {
-                // Obtener ID de mi familia
                 val familiaId = obtenerFamiliaIdDelUsuario(userId)
                 if (familiaId == -1L) {
                     Log.w("SensoresUI", "Usuario sin familia")
@@ -1411,42 +1778,23 @@ object PlantaDao {
                     val valor = rs.getFloat("valor_actual")
                     val unidad = rs.getString("unidad_medida") ?: ""
 
-                    // Determinar color y estado según tu diseño
                     val (colorRes, estadoTexto, progress) = determinarEstadoUI(
                         estadoId,
                         tipo,
                         valor
                     )
 
-                    // Determinar icono
                     val (iconRes, bgColorRes) = determinarIconoYFondo(tipo)
 
                     val sensor = mapOf(
-                        // Para tvSensorName
                         "nombre" to (rs.getString("nombre_sensor") ?: "Sensor"),
-
-                        // Para tvSensorLocation
                         "ubicacion" to (rs.getString("ubicacion") ?: "Sin ubicación"),
-
-                        // Para tvSensorValue - formateado bonito
                         "valor" to formatValor(valor, unidad),
-
-                        // Para tvSensorStatus
                         "estado" to estadoTexto,
-
-                        // Para progressSensor
                         "progress" to progress,
-
-                        // Para ivSensorIcon
                         "icono_res" to iconRes,
-
-                        // Para containerIcon background
                         "bg_color_res" to bgColorRes,
-
-                        // Para tvSensorStatus color
                         "color_res" to colorRes,
-
-                        // Datos adicionales si los necesitas
                         "tipo" to tipo,
                         "planta" to (rs.getString("planta_nombre") ?: ""),
                         "hora" to (rs.getString("ultima_hora") ?: "--:--"),
@@ -1485,7 +1833,6 @@ object PlantaDao {
                 val familiaId = obtenerFamiliaIdDelUsuario(userId)
                 if (familiaId == -1L) return Triple(0, 0, 0)
 
-                // Contar TOTAL de sensores activos (primera tarjeta)
                 val sqlTotal = """
                 SELECT COUNT(*) as total
                 FROM main_sensor ms
@@ -1504,7 +1851,6 @@ object PlantaDao {
                 rsTotal.close()
                 stmtTotal.close()
 
-                // De esos activos, contar cuántos están óptimos y en alerta
                 if (activos > 0) {
                     val sensores = obtenerSensoresMiFamiliaParaUI(userId)
 

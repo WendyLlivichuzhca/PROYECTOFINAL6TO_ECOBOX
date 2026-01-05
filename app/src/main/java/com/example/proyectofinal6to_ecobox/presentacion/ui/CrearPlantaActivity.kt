@@ -323,9 +323,10 @@ class CrearPlantaActivity : AppCompatActivity() {
                             "¡Planta creada exitosamente!",
                             Toast.LENGTH_SHORT
                         ).show()
-
-                        // Regresar a la actividad anterior
-                        setResult(Activity.RESULT_OK)
+                        val resultIntent = Intent().apply {
+                            putExtra("PLANTA_CREADA", true)
+                        }
+                        setResult(Activity.RESULT_OK, resultIntent)
                         finish()
                     } else {
                         Toast.makeText(

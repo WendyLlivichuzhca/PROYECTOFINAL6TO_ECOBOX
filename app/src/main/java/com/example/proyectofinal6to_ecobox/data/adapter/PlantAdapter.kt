@@ -33,6 +33,8 @@ class PlantAdapter(
         val tvLight: TextView = view.findViewById(R.id.tvLight)
         val tvTemp: TextView = view.findViewById(R.id.tvTemp)
 
+        val tvSensorCount: TextView = view.findViewById(R.id.tvSensorCount)
+
         // Agua
         val tvWaterPercent: TextView = view.findViewById(R.id.tvWaterPercent)
         val progressWater: ProgressBar = view.findViewById(R.id.progressWater)
@@ -55,7 +57,13 @@ class PlantAdapter(
         holder.tvHumidity.text = "${item.humedadSuelo.toInt()}%"
         holder.tvLight.text = "${item.luz.toInt()}%"
         holder.tvTemp.text = "${item.temperatura.toInt()}°C"
-
+        // NUEVO: Mostrar número de sensores
+        val sensorCountText = if (item.sensorCount > 0) {
+            "${item.sensorCount}"
+        } else {
+            "0"
+        }
+        holder.tvSensorCount.text = sensorCountText
         // 3. Configurar Barra de Agua
         holder.tvWaterPercent.text = "${item.nivelAgua}%"
         holder.progressWater.progress = item.nivelAgua
@@ -150,6 +158,8 @@ class PlantAdapter(
         val luz: Float,
         val nivelAgua: Int,
         val estado: String,
-        val ultimoRiego: String
+        val ultimoRiego: String,
+        val sensorCount: Int // NUEVO: Agregar conteo de sensores
+
     )
 }

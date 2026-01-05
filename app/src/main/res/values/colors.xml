@@ -9,8 +9,6 @@
     <color name="status_critical">#EF5350</color>
     <color name="status_warning">#FFA726</color>
     <color name="status_healthy">#66BB6A</color>
-    <color name="white_20">#33FFFFFF</color>
-    <color name="white_90">#E6FFFFFF</color>
     <color name="bg_cream">#F9FBE7</color>
     <color name="text_dark">#212121</color>
     <color name="text_gray">#757575</color>
@@ -28,35 +26,19 @@
     <color name="alert_warning_text">#D97706</color>
     <color name="text_secondary">#6B7280</color>
     <color name="primary">#2D5A40</color>
-    <color name="primary_text">#111827</color>
     <color name="secondary_text">#6B7280</color>
     <color name="error">#EF4444</color>
-    <color name="success">#4CAF50</color>
-    <color name="card_green">#E8F5E9</color>
-    <color name="card_blue">#E3F2FD</color>
-    <color name="card_orange">#FFF3E0</color>
-    <color name="card_purple">#F3E5F5</color>
     <color name="circle_primary">#4CAF50</color>
-    <color name="circle_white">#FFFFFF</color>
-    <color name="background_gray">#F5F7FA</color>
     <!-- Colores existentes -->
-    <color name="eco_text_primary">#212121</color>
-    <color name="eco_text_secondary">#757575</color>
-    <color name="eco_divider">#E0E0E0</color>
-    <color name="eco_background_light">#F1F8E9</color>
-    <color name="eco_primary_light">#C8E6C9</color>
-    <color name="divider">#E0E0E0</color>
+    <!-- Colores de estado -->
+    <color name="status_healthy_light">#ECFDF5</color>
+    <color name="warning">#F59E0B</color>
+
+    <color name="status_warning_light">#FEF3C7</color>
+
+    <color name="status_critical_light">#FEF2F2</color>
+
+    <color name="status_unknown_light">#F3F4F6</color>
 
 
-    <!-- Colores para avatar -->
-    <color name="avatar_color_1">#4CAF50</color>
-    <color name="avatar_color_2">#2196F3</color>
-    <color name="avatar_color_3">#FF9800</color>
-    <color name="avatar_color_4">#9C27B0</color>
-    <color name="avatar_color_5">#F44336</color>
-    <color name="avatar_color_6">#009688</color>
-
-    <!-- Estados -->
-    <color name="online">#4CAF50</color>
-    <color name="offline">#F44336</color>
 </resources>

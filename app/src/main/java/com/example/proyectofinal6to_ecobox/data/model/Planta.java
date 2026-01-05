@@ -2,7 +2,11 @@ package com.example.proyectofinal6to_ecobox.data.model;
 
 import com.google.gson.annotations.SerializedName;
 
-public class Planta {
+import java.io.Serializable;
+
+public class Planta implements Serializable {  // <-- AÑADE implements Serializable
+
+    private static final long serialVersionUID = 1L;  // <-- Añade esto también
 
     private long id;
     private String nombre;

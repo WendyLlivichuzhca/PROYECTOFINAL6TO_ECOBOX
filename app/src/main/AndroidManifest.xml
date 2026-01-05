@@ -96,11 +96,12 @@
 
         <activity android:name=".presentacion.ui.AlertsActivity" />
 
-        <activity android:name=".presentacion.ui.HistoryActivity" />
         <activity android:name=".presentacion.ui.LoginActivity" />
         <activity
             android:name=".presentacion.ui.AllEventsActivity"
             android:exported="false" />
+        <activity android:name=".presentacion.ui.EditarPlantaActivity" />
+
 
     </application>
 </manifest>

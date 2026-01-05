@@ -260,8 +260,6 @@ class LoginActivity : AppCompatActivity() {
         })
     }
 
-    // --- Animaciones (Igual que antes) ---
-
     private fun setupAnimations() {
         // 1. Configuración Inicial: Ponemos todo abajo a la MISMA distancia
         // Así parecerá que la ola y el formulario son una sola pieza.
@@ -312,10 +310,6 @@ class LoginActivity : AppCompatActivity() {
             .setDuration(duracionAnimacion)
             .setInterpolator(interpoladorSuave)
             .start()
-
-        // -----------------------------------------------------------
-        // 3. Detalles "bonitos" que entran después
-        // -----------------------------------------------------------
 
         // La hoja aparece rebotando justo cuando el bloque llega arriba
         lottieLeaf.animate()

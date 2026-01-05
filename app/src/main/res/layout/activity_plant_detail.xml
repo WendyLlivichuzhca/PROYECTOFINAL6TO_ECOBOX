@@ -37,21 +37,59 @@
                 android:layout_height="match_parent"
                 android:background="@drawable/bg_gradient_scrim" />
 
-            <androidx.appcompat.widget.Toolbar
-                android:id="@+id/toolbar"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="24dp"
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end|top"
                 android:layout_marginTop="48dp"
-                android:background="@drawable/bg_circle_decor"
-                android:backgroundTint="#D9FFFFFF"
-                android:padding="12dp"
-                android:src="@drawable/ic_back_arrow"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:tint="#FFFFFF">
+                android:layout_marginEnd="16dp"
+                android:orientation="horizontal">
 
-            </androidx.appcompat.widget.Toolbar>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEdit"
+                    style="@style/Widget.MaterialComponents.Button.Icon"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="8dp"
+                    android:insetLeft="0dp"
+                    android:insetTop="0dp"
+                    android:insetRight="0dp"
+                    android:insetBottom="0dp"
+                    app:backgroundTint="#80000000"
+                    app:cornerRadius="22dp"
+                    app:icon="@drawable/ic_edit"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconTint="@android:color/white" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDelete"
+                    style="@style/Widget.MaterialComponents.Button.Icon"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:insetLeft="0dp"
+                    android:insetTop="0dp"
+                    android:insetRight="0dp"
+                    android:insetBottom="0dp"
+                    app:backgroundTint="#80FF5252"
+                    app:cornerRadius="22dp"
+                    app:icon="@drawable/ic_delete"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:iconTint="@android:color/white" />
+                <!-- En la sección de botones, agrega esto -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGestionarSensores"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="Sensores"
+                    android:icon="@drawable/ic_sensor"
+                    app:iconGravity="textStart"
+                    app:iconTint="@color/eco_primary" />
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -100,7 +138,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingBottom="100dp"
+        android:paddingBottom="120dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -509,12 +547,27 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="@drawable/bg_gradient_bottom_up"
+        android:orientation="horizontal"
         android:padding="20dp">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnWaterNow"
-            android:layout_width="match_parent"
+            android:id="@+id/btnSeguimiento"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
             android:layout_height="60dp"
+            android:layout_marginEnd="12dp"
+            android:layout_weight="1"
+            android:text="Seguimiento"
+            android:textColor="#2D5A40"
+            app:cornerRadius="30dp"
+            app:strokeColor="#2D5A40"
+            app:strokeWidth="2dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnWaterNow"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="1.2"
             android:elevation="6dp"
             android:stateListAnimator="@null"
             android:text="Regar Ahora"
