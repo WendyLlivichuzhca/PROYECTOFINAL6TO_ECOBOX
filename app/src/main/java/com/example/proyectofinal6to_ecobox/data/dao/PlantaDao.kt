@@ -959,11 +959,11 @@ object PlantaDao {
             if (conexion != null) {
                 // Obtener la ubicación del primer sensor activo
                 val sqlUbicacion = """
-                    SELECT ubicacion 
-                    FROM main_sensor 
-                    WHERE planta_id = ? AND activo = 1 
-                    LIMIT 1
-                """
+                SELECT ubicacion 
+                FROM main_sensor 
+                WHERE planta_id = ? AND activo = 1 
+                LIMIT 1
+            """
                 val stmtUbi = conexion.prepareStatement(sqlUbicacion)
                 stmtUbi.setLong(1, plantaId)
                 val rsUbi = stmtUbi.executeQuery()
@@ -976,21 +976,22 @@ object PlantaDao {
                 rsUbi.close()
                 stmtUbi.close()
 
-                // Obtener últimas mediciones de sensores
+                // Obtener últimas mediciones de sensores - CORREGIDO
                 val sqlMediciones = """
-                    SELECT 
-                        ts.nombre as tipo_sensor,
-                        m.valor
-                    FROM main_sensor ms
-                    INNER JOIN tipo_sensor ts ON ms.tipo_sensor_id = ts.id
-                    INNER JOIN (
-                        SELECT sensor_id, MAX(fecha) as ultima_fecha
-                        FROM medicion
-                        GROUP BY sensor_id
-                    ) ult_med ON ms.id = ult_med.sensor_id
-                    INNER JOIN medicion m ON ms.id = m.sensor_id AND m.fecha = ult_med.ultima_fecha
-                    WHERE ms.planta_id = ? AND ms.activo = 1
-                """
+                SELECT 
+                    ts.nombre as tipo_sensor,
+                    m.valor,
+                    m.fecha
+                FROM main_sensor ms
+                INNER JOIN tipo_sensor ts ON ms.tipo_sensor_id = ts.id
+                INNER JOIN (
+                    SELECT sensor_id, MAX(fecha) as ultima_fecha
+                    FROM medicion
+                    GROUP BY sensor_id
+                ) ult_med ON ms.id = ult_med.sensor_id
+                INNER JOIN medicion m ON ms.id = m.sensor_id AND m.fecha = ult_med.ultima_fecha
+                WHERE ms.planta_id = ? AND ms.activo = 1
+            """
                 val stmtMed = conexion.prepareStatement(sqlMediciones)
                 stmtMed.setLong(1, plantaId)
                 val rsMed = stmtMed.executeQuery()
@@ -1005,23 +1006,21 @@ object PlantaDao {
 
                     when {
                         tipo.contains("Humedad", ignoreCase = true) -> datos["humedad"] = valor
-                        tipo.contains("Temperatura", ignoreCase = true) -> datos["temperatura"] =
-                            valor
-
+                        tipo.contains("Temperatura", ignoreCase = true) -> datos["temperatura"] = valor
                         tipo.contains("Luz", ignoreCase = true) -> datos["luz"] = valor
                     }
                 }
                 rsMed.close()
                 stmtMed.close()
 
-                // Obtener último riego
+                // Obtener último riego - CORREGIDO
                 val sqlRiego = """
-                    SELECT fecha, cantidad_agua 
-                    FROM riego 
-                    WHERE planta_id = ? 
-                    ORDER BY fecha DESC 
-                    LIMIT 1
-                """
+                SELECT fecha_creacion as fecha, cantidad_ml as cantidad_agua
+                FROM riego 
+                WHERE planta_id = ? 
+                ORDER BY fecha_creacion DESC 
+                LIMIT 1
+            """
                 val stmtRiego = conexion.prepareStatement(sqlRiego)
                 stmtRiego.setLong(1, plantaId)
                 val rsRiego = stmtRiego.executeQuery()
@@ -1029,7 +1028,7 @@ object PlantaDao {
                 if (rsRiego.next()) {
                     val fecha = rsRiego.getString("fecha") ?: ""
                     val cantidad = rsRiego.getFloat("cantidad_agua")
-                    datos["ultimo_riego"] = "$fecha (${cantidad}L)"
+                    datos["ultimo_riego"] = "$fecha (${cantidad}ml)"
                 } else {
                     datos["ultimo_riego"] = "Sin registro"
                 }
@@ -1038,12 +1037,12 @@ object PlantaDao {
 
                 // Obtener estado actual de la planta
                 val sqlEstado = """
-                    SELECT estado 
-                    FROM seguimiento_estado_planta 
-                    WHERE planta_id = ? 
-                    ORDER BY fecha_registro DESC 
-                    LIMIT 1
-                """
+                SELECT estado 
+                FROM seguimiento_estado_planta 
+                WHERE planta_id = ? 
+                ORDER BY fecha_registro DESC 
+                LIMIT 1
+            """
                 val stmtEstado = conexion.prepareStatement(sqlEstado)
                 stmtEstado.setLong(1, plantaId)
                 val rsEstado = stmtEstado.executeQuery()
@@ -1635,18 +1634,18 @@ object PlantaDao {
         try {
             if (conexion != null) {
                 val sql = """
-                    SELECT 
-                        DATE_FORMAT(m.fecha, '%H:%i') as hora,
-                        AVG(m.valor) as promedio
-                    FROM main_sensor ms
-                    INNER JOIN tipo_sensor ts ON ms.tipo_sensor_id = ts.id
-                    INNER JOIN medicion m ON ms.id = m.sensor_id
-                    WHERE ms.planta_id = ? 
-                      AND ts.nombre LIKE ?
-                      AND m.fecha >= DATE_SUB(NOW(), INTERVAL ? HOUR)
-                    GROUP BY DATE_FORMAT(m.fecha, '%Y-%m-%d %H:%i')
-                    ORDER BY m.fecha ASC
-                """.trimIndent()
+                SELECT 
+                    DATE_FORMAT(m.fecha, '%H:%i') as hora,
+                    AVG(m.valor) as promedio
+                FROM main_sensor ms
+                INNER JOIN tipo_sensor ts ON ms.tipo_sensor_id = ts.id
+                INNER JOIN medicion m ON ms.id = m.sensor_id
+                WHERE ms.planta_id = ? 
+                  AND ts.nombre LIKE ?
+                  AND m.fecha >= DATE_SUB(NOW(), INTERVAL ? HOUR)
+                GROUP BY DATE_FORMAT(m.fecha, '%Y-%m-%d %H:%i')
+                ORDER BY m.fecha ASC
+            """.trimIndent()
 
                 val stmt = conexion.prepareStatement(sql)
                 stmt.setLong(1, plantaId)
