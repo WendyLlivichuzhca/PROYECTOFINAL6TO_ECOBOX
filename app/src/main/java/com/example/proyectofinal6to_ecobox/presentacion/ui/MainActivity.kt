@@ -31,36 +31,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupNavigation() {
         // 1. Obtener NavController de forma segura
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
 
-        // 2. Vincular BottomNav con NavController
-        // Esto permite que la navegación funcione automáticamente si los IDs del menú coinciden con los del nav_graph
+        // 2. Vincular BottomNav con NavController - ESTO ES SUFICIENTE
         NavigationUI.setupWithNavController(bottomNav, navController)
 
-        // 3. Control de selección de items
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_profile -> {
-                    // Ahora navegamos al fragmento que diseñamos, NO mostramos el diálogo aquí
-                    navController.navigate(R.id.nav_profile)
-                    true
-                }
-                else -> {
-                    // Para los otros items (Home, Plantas, etc.) usamos la navegación estándar
-                    NavigationUI.onNavDestinationSelected(item, navController)
-                    true
-                }
-            }
-        }
 
-        bottomNav.setOnItemReselectedListener {
-            // Se deja vacío para evitar que la pantalla parpadee si el usuario pulsa el icono donde ya está
-        }
     }
-
-    // Nota: He quitado mostrarDialogoCerrarSesion de aquí porque ahora ese diálogo
-    // debe activarse desde el botón "Cerrar Sesión" DENTRO del ProfileFragment.
 }

@@ -40,5 +40,6 @@
 
     <color name="status_unknown_light">#F3F4F6</color>
 
-
+    <color name="background_gray">#F9FAFB</color>
+    <color name="primary_color">#4CAF50</color>
 </resources>

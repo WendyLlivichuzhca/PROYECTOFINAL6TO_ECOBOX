@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="4dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="#FFFFFF"
+    app:strokeWidth="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                app:cardBackgroundColor="#F1F8F5"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp">
+
+                <ImageView
+                    android:id="@+id/ivSensorIcon"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_thermometer"
+                    app:tint="#2D5A40" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/tvSensorStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:background="@drawable/bg_chip_status"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp"
+                android:text="ACTIVO"
+                android:textColor="#2D5A40"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.05" />
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/tvSensorName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Sensor Temp Rosa"
+            android:textColor="#111827"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvSensorLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Jardín Principal"
+            android:textColor="#9CA3AF"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvSensorValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="22.50°C"
+            android:textColor="#2D5A40"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="16dp"
+            android:background="#F3F4F6" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/tvLastReading"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hace 2 min"
+                android:textColor="#BDC3C7"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/tvSensorId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:text="ID: 001"
+                android:textColor="#BDC3C7"
+                android:textSize="11sp" />
+        </RelativeLayout>
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

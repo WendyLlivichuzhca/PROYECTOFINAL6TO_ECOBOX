@@ -3,6 +3,7 @@ package com.example.proyectofinal6to_ecobox.data.dao
 import android.util.Log
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.model.Planta
+import java.math.BigDecimal
 import java.sql.ResultSet
 import java.util.ArrayList
 
@@ -728,6 +729,87 @@ object PlantaDao {
         return cantidad
     }
 
+    fun obtenerSensoresDetalladosParaVista(plantaId: Long): List<SensorVista> {
+        val sensoresVista = mutableListOf<SensorVista>()
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                val sql = """
+            SELECT 
+                s.id,
+                s.nombre,
+                s.ubicacion,
+                ts.nombre as tipo_sensor,
+                ts.unidad_medida,
+                es.nombre as estado,
+                m.valor,
+                DATE_FORMAT(m.fecha, '%d/%m/%Y, %H:%i:%s') as ultima_lectura,
+                s.activo,
+                p.nombrePersonalizado as planta_nombre  -- ← AQUÍ agregamos el nombre de la planta
+            FROM main_sensor s
+            JOIN tipo_sensor ts ON s.tipo_sensor_id = ts.id
+            JOIN estado_sensor es ON s.estado_sensor_id = es.id
+            JOIN planta p ON s.planta_id = p.id  -- ← Unimos con la tabla planta
+            LEFT JOIN (
+                SELECT m1.sensor_id, m1.valor, m1.fecha
+                FROM medicion m1
+                WHERE m1.fecha = (
+                    SELECT MAX(m2.fecha)
+                    FROM medicion m2
+                    WHERE m2.sensor_id = m1.sensor_id
+                )
+            ) m ON s.id = m.sensor_id
+            WHERE s.planta_id = ? AND s.activo = 1
+            ORDER BY s.tipo_sensor_id
+        """
+
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, plantaId)
+                val rs = stmt.executeQuery()
+
+                while (rs.next()) {
+                    val sensorVista = SensorVista(
+                        id = rs.getLong("id"),
+                        nombre = rs.getString("nombre"),
+                        ubicacion = rs.getString("ubicacion"),
+                        tipoSensor = rs.getString("tipo_sensor"),
+                        unidadMedida = rs.getString("unidad_medida"),
+                        estado = rs.getString("estado"),
+                        valor = rs.getBigDecimal("valor"),
+                        ultimaLectura = rs.getString("ultima_lectura"),
+                        activo = rs.getBoolean("activo"),
+                        plantaNombre = rs.getString("planta_nombre")  // ← Agregamos este campo
+                    )
+                    sensoresVista.add(sensorVista)
+                }
+
+                rs.close()
+                stmt.close()
+                conexion.close()
+
+                Log.d("SensorDao", "Sensores para vista encontrados: ${sensoresVista.size}")
+            }
+        } catch (e: Exception) {
+            Log.e("SensorDao", "Error obteniendo sensores para vista: ${e.message}", e)
+        }
+
+        return sensoresVista
+    }
+
+    // Clase simple para la vista - ACTUALIZADA con plantaNombre
+    data class SensorVista(
+        val id: Long,
+        val nombre: String,
+        val ubicacion: String,
+        val tipoSensor: String,
+        val unidadMedida: String,
+        val estado: String,
+        val valor: BigDecimal?,
+        val ultimaLectura: String?,
+        val activo: Boolean,
+        val plantaNombre: String? = null  // ← Campo opcional para nombre de planta
+    )
     /**
      * Elimina completamente una planta y todos sus datos asociados
      */
@@ -822,7 +904,10 @@ object PlantaDao {
                     // Confirmar transacción
                     conexion.commit()
 
-                    Log.d("PlantaDao", "Planta $plantaId eliminada exitosamente. Filas afectadas: $filasEliminadas")
+                    Log.d(
+                        "PlantaDao",
+                        "Planta $plantaId eliminada exitosamente. Filas afectadas: $filasEliminadas"
+                    )
                     return filasEliminadas > 0
 
                 } catch (e: Exception) {
@@ -1421,7 +1506,11 @@ object PlantaDao {
 
                     // Registrar en historial de estado si cambió
                     if (planta.estado != "normal") {
-                        registrarCambioEstado(planta.id, planta.estado, "Actualizado desde app móvil")
+                        registrarCambioEstado(
+                            planta.id,
+                            planta.estado,
+                            "Actualizado desde app móvil"
+                        )
                     }
                 } else {
                     Log.e("PlantaDao", "No se actualizaron filas - planta no encontrada")
@@ -1435,7 +1524,8 @@ object PlantaDao {
 
             if (e.message?.contains("aspecto") == true ||
                 e.message?.contains("estado") == true ||
-                e.message?.contains("foto") == true) {
+                e.message?.contains("foto") == true
+            ) {
 
                 Log.d("PlantaDao", "Intentando actualización básica...")
                 return actualizarPlantaBasica(planta, userId)
@@ -1492,7 +1582,11 @@ object PlantaDao {
     /**
      * Registra un cambio de estado en el historial
      */
-    private fun registrarCambioEstado(plantaId: Long, estado: String, observaciones: String): Boolean {
+    private fun registrarCambioEstado(
+        plantaId: Long,
+        estado: String,
+        observaciones: String
+    ): Boolean {
         var registrado = false
         val conexion = MySqlConexion.getConexion()
 

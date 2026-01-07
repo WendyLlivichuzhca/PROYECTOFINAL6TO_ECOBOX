@@ -40,7 +40,7 @@ class FamiliesFragment : Fragment(R.layout.fragment_families) {
 
             // Navegar al detalle
             androidx.navigation.Navigation.findNavController(view)
-                .navigate(R.id.nav_family_detail, bundle)
+                .navigate(R.id.nav_families, bundle)
         }
 
         // Asignar el adaptador al RecyclerView

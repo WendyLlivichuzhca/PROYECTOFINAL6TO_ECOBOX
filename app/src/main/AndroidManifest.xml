@@ -96,6 +96,10 @@
 
         <activity android:name=".presentacion.ui.AlertsActivity" />
 
+        <activity android:name=".presentacion.ui.SensoresActivity" />
+
+        <activity android:name=".presentacion.ui.AgregarSensorActivity" />
+
         <activity android:name=".presentacion.ui.LoginActivity" />
         <activity
             android:name=".presentacion.ui.AllEventsActivity"

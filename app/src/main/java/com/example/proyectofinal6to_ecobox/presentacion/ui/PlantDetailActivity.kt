@@ -74,6 +74,9 @@ class PlantDetailActivity : AppCompatActivity() {
     private var plantaUbicacion: String = ""
     private var plantaFoto: String = ""
 
+    private lateinit var btnGestionarSensores: MaterialButton
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_plant_detail)
@@ -129,6 +132,9 @@ class PlantDetailActivity : AppCompatActivity() {
 
         chartHistory = findViewById(R.id.chartHistory)
         historialTitle = findViewById(R.id.tvHistoryTitle)
+
+        btnGestionarSensores = findViewById(R.id.btnGestionarSensores)
+
     }
 
     private fun setupClickListeners() {
@@ -136,9 +142,11 @@ class PlantDetailActivity : AppCompatActivity() {
             waterPlantNow()
         }
 
-        //btnSeguimiento.setOnClickListener {
-        //navigateToTracking()
-        //}
+
+        // BOTÓN DE SENSORES - NUEVO
+        btnGestionarSensores.setOnClickListener {
+            navigateToSensors()
+        }
 
         btnEdit.setOnClickListener {
             navigateToEditPlant()
@@ -161,17 +169,31 @@ class PlantDetailActivity : AppCompatActivity() {
         }
     }
 
-    //private fun navigateToTracking() {
-    //// Navegar a la actividad de seguimiento
-    //val intent = Intent(this, TrackingActivity::class.java).apply {
-    //putExtra("PLANT_ID", plantaId)
-    //putExtra("PLANT_NAME", plantaNombre)
-    //putExtra("PLANT_LOCATION", plantaUbicacion)
-    //}
-    //startActivity(intent)
 
+    private fun navigateToSensors() {
+        // Verificar que tenemos los datos de la planta
+        if (planta == null) {
+            Toast.makeText(this, "Error: Planta no disponible", Toast.LENGTH_SHORT).show()
+            return
+        }
 
-//}
+        // Usar el método de tu clase SensoresActivity
+        try {
+            val intent = SensoresActivity.newIntent(
+                context = this,
+                plantaId = plantaId,
+                plantaNombre = plantaNombre
+            )
+            startActivity(intent)
+        } catch (e: Exception) {
+            // Fallback: método simple si el otro no funciona
+            val intent = Intent(this, SensoresActivity::class.java).apply {
+                putExtra("plantaId", plantaId)
+                putExtra("plantaNombre", plantaNombre)
+            }
+            startActivity(intent)
+        }
+    }
 
     private fun navigateToEditPlant() {
         // Asegúrate de tener el objeto planta

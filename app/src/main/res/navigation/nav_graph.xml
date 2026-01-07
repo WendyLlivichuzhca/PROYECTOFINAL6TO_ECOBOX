@@ -22,25 +22,16 @@
         android:name="com.example.proyectofinal6to_ecobox.fragment.FamiliesFragment"
         android:label="Mis Familias"
         tools:layout="@layout/fragment_families" />
-
-    <fragment
-        android:id="@+id/nav_sensors"
-        android:name="com.example.proyectofinal6to_ecobox.fragment.SensorsFragment"
-        android:label="Sensores"
-        tools:layout="@layout/fragment_sensors" />
-
     <fragment
         android:id="@+id/nav_history"
         android:name="com.example.proyectofinal6to_ecobox.fragment.HistoryFragment"
         android:label="Historial"
-        tools:layout="@layout/fragment_dashboard" />
-    <fragment
-        android:id="@+id/nav_family_detail"
-        android:name="com.example.proyectofinal6to_ecobox.fragment.FamilyDetailFragment"
-        android:label="Detalle Familia" />
+        tools:layout="@layout/fragment_history" />
+
     <fragment
         android:id="@+id/nav_profile"
         android:name="com.example.proyectofinal6to_ecobox.fragment.ProfileFragment"
-        android:label="Perfil Usuario " />
+        android:label="Perfil"
+        tools:layout="@layout/fragment_profile" />
 
 </navigation>

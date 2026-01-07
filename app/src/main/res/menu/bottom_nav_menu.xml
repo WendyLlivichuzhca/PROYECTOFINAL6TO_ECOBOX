@@ -16,11 +16,6 @@
         android:title="Familias" />
 
     <item
-        android:id="@+id/nav_sensors"
-        android:icon="@drawable/ic_dashboard_gauge"
-        android:title="Sensores" />
-
-    <item
         android:id="@+id/nav_history"
         android:icon="@drawable/ic_history"
         android:title="Historial" />

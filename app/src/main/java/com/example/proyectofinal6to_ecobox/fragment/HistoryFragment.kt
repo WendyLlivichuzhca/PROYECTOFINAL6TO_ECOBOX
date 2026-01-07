@@ -1,4 +1,4 @@
-package com.example.proyectofinal6to_ecobox.fragment // Asegúrate de que el paquete sea correcto
+package com.example.proyectofinal6to_ecobox.fragment
 
 import android.content.Context
 import android.content.Intent
@@ -11,6 +11,9 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao.DataPointDAO
@@ -27,11 +30,9 @@ import com.google.android.material.chip.ChipGroup
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-// 1. Cambiamos de AppCompatActivity a Fragment
-class HistoryFragment : Fragment(R.layout.activity_history) {
+class HistoryFragment : Fragment(R.layout.fragment_history) {
 
     // UI Components
-    // Nota: Eliminamos btnBack porque en el menú principal no suele haber botón atrás
     private lateinit var lineChart: LineChart
     private lateinit var tvHumidityAvg: TextView
     private lateinit var tvTempAvg: TextView
@@ -56,11 +57,14 @@ class HistoryFragment : Fragment(R.layout.activity_history) {
     private var userId: Long = 1
     private var plantasFamilia = mutableListOf<PlantaDao.PlantaConDatos>()
 
-    // 2. Usamos onViewCreated en lugar de onCreate
+    // Bandera para controlar si ya se cargaron datos
+    private var isInitialLoad = true
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        Log.d("HistoryFragment", "onViewCreated")
 
-        // Validar sesión usando requireActivity()
+        // Validar sesión
         val prefs = requireActivity().getSharedPreferences("ecobox_prefs", Context.MODE_PRIVATE)
         userId = prefs.getLong("user_id", -1)
 
@@ -70,14 +74,48 @@ class HistoryFragment : Fragment(R.layout.activity_history) {
             return
         }
 
-        initViews(view) // Pasamos la vista
+        initViews(view)
         setupClickListeners(view)
-        loadPlantasFamilia()
+
+        // Seleccionar periodo inicial (24h)
+        updatePeriodUI(btn24h)
+
+        // Configurar observer para cuando el fragmento se vuelve visible
+        setupVisibilityObserver()
+    }
+
+    private fun setupVisibilityObserver() {
+        // Observer para cuando el fragmento se vuelve visible
+        val observer = object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                when (event) {
+                    Lifecycle.Event.ON_RESUME -> {
+                        Log.d("HistoryFragment", "Fragment visible - ON_RESUME")
+                        // Siempre recargar datos cuando el fragmento se vuelve visible
+                        if (::lineChart.isInitialized) {
+                            if (isInitialLoad) {
+                                isInitialLoad = false
+                                loadPlantasFamilia()
+                            } else {
+                                loadHistoryData()
+                            }
+                        }
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        // Agregar observer al lifecycle del fragmento
+        lifecycle.addObserver(observer)
+
+        // También agregar observer al viewLifecycleOwner para cuando la vista se recrea
+        viewLifecycleOwner.lifecycle.addObserver(observer)
     }
 
     private fun initViews(view: View) {
-        // Nota: Si tenías un btnBack en el XML, puedes ocultarlo aquí:
-        // view.findViewById<View>(R.id.btnBack).visibility = View.GONE
+        // Ocultar botón atrás si existe
+        view.findViewById<View>(R.id.btnBack)?.visibility = View.GONE
 
         lineChart = view.findViewById(R.id.lineChart)
 
@@ -97,11 +135,27 @@ class HistoryFragment : Fragment(R.layout.activity_history) {
     }
 
     private fun setupClickListeners(view: View) {
-        // Eliminamos el listener de btnBack
-
-        btn24h.setOnClickListener { changePeriod(24, btn24h) }
-        btn7d.setOnClickListener { changePeriod(168, btn7d) }
-        btn30d.setOnClickListener { changePeriod(720, btn30d) }
+        btn24h.setOnClickListener {
+            if (selectedPeriod != 24) {
+                selectedPeriod = 24
+                updatePeriodUI(btn24h)
+                loadHistoryData()
+            }
+        }
+        btn7d.setOnClickListener {
+            if (selectedPeriod != 168) {
+                selectedPeriod = 168
+                updatePeriodUI(btn7d)
+                loadHistoryData()
+            }
+        }
+        btn30d.setOnClickListener {
+            if (selectedPeriod != 720) {
+                selectedPeriod = 720
+                updatePeriodUI(btn30d)
+                loadHistoryData()
+            }
+        }
 
         view.findViewById<TextView>(R.id.btnSeeAllEvents).setOnClickListener {
             val intent = Intent(requireContext(), AllEventsActivity::class.java)
@@ -110,50 +164,39 @@ class HistoryFragment : Fragment(R.layout.activity_history) {
         }
     }
 
-    private fun changePeriod(periodHours: Int, selectedView: TextView) {
-        if (selectedPeriod == periodHours) return
-
-        selectedPeriod = periodHours
-        updatePeriodUI(selectedView)
-        loadHistoryData()
-    }
-
     private fun updatePeriodUI(selectedView: TextView) {
         val defaultColor = Color.parseColor("#9CA3AF")
         val selectedColor = Color.WHITE
-        val transparent = Color.TRANSPARENT
-        // Usamos requireContext() para obtener recursos
-        val selectedBg = ContextCompat.getDrawable(requireContext(), R.drawable.bg_toggle_selected)
 
+        // Restablecer todos
         listOf(btn24h, btn7d, btn30d).forEach { btn ->
             btn.background = null
-            btn.setBackgroundColor(transparent)
+            btn.setBackgroundColor(Color.TRANSPARENT)
             btn.setTextColor(defaultColor)
         }
 
-        selectedView.background = selectedBg
+        // Establecer seleccionado
+        selectedView.background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_toggle_selected)
         selectedView.setTextColor(selectedColor)
     }
 
     private fun loadPlantasFamilia() {
+        Log.d("HistoryFragment", "Cargando plantas familia")
         Thread {
             try {
-                plantasFamilia = PlantaDao.obtenerPlantasFamiliaConDatos(userId).toMutableList()
-                // Usamos activity?.runOnUiThread para evitar crash si el fragmento se cierra
-                activity?.runOnUiThread {
+                val plantas = PlantaDao.obtenerPlantasFamiliaConDatos(userId)
+                requireActivity().runOnUiThread {
+                    plantasFamilia = plantas.toMutableList()
                     setupPlantChips()
                     loadHistoryData()
                 }
             } catch (e: Exception) {
-                Log.e("History", "Error cargando plantas", e)
+                Log.e("HistoryFragment", "Error cargando plantas", e)
             }
         }.start()
     }
 
     private fun setupPlantChips() {
-        // Verificamos que el contexto exista antes de crear chips
-        if (context == null) return
-
         chipGroupPlants.removeAllViews()
 
         val allChip = createChip("Todas", -1)
@@ -167,71 +210,85 @@ class HistoryFragment : Fragment(R.layout.activity_history) {
 
         chipGroupPlants.setOnCheckedChangeListener { group, checkedId ->
             if (checkedId == View.NO_ID) {
-                selectedPlantId = -1
-            } else {
-                val chip = group.findViewById<Chip>(checkedId)
-                selectedPlantId = chip.tag as Long
+                group.check(allChip.id) // Mantener "Todas" seleccionada
+                return@setOnCheckedChangeListener
             }
-            loadHistoryData()
+
+            val chip = group.findViewById<Chip>(checkedId)
+            val newPlantId = chip.tag as Long
+
+            if (newPlantId != selectedPlantId) {
+                selectedPlantId = newPlantId
+                loadHistoryData()
+            }
         }
     }
 
     private fun createChip(label: String, tagId: Long): Chip {
-        // Usamos requireContext()
-        val chip = Chip(requireContext())
-        chip.text = label
-        chip.tag = tagId
-        chip.isCheckable = true
+        return Chip(requireContext()).apply {
+            text = label
+            tag = tagId
+            isCheckable = true
+            id = View.generateViewId() // Generar ID único
 
-        chip.setChipBackgroundColorResource(R.color.selector_chip_background_color)
-        chip.setTextColor(ContextCompat.getColorStateList(requireContext(), R.color.selector_chip_text_color))
-        chip.setChipStrokeColorResource(android.R.color.transparent)
-        chip.chipStrokeWidth = 0f
-
-        chip.isClickable = true
-        chip.isCheckedIconVisible = false
-
-        return chip
+            // Configurar estilo
+            setChipBackgroundColorResource(R.color.selector_chip_background_color)
+            setTextColor(ContextCompat.getColorStateList(requireContext(), R.color.selector_chip_text_color))
+            setChipStrokeColorResource(android.R.color.transparent)
+            chipStrokeWidth = 0f
+            isClickable = true
+            isCheckedIconVisible = false
+        }
     }
 
     private fun loadHistoryData() {
+        Log.d("HistoryFragment", "Cargando datos históricos - periodo: $selectedPeriod, planta: $selectedPlantId")
+
         tvHumidityAvg.text = "..."
+        tvTempAvg.text = "..."
+        tvLightAvg.text = "..."
 
         Thread {
             try {
-                val stats = PlantaDao.obtenerEstadisticasHistorialFamiliar(userId, selectedPeriod, selectedPlantId)
-                val graficoData = PlantaDao.obtenerDatosHistoricosGraficoFamiliar(userId, selectedPeriod, selectedPlantId)
+                val stats = PlantaDao.obtenerEstadisticasHistorialFamiliar(
+                    userId, selectedPeriod, selectedPlantId
+                )
+                val graficoData = PlantaDao.obtenerDatosHistoricosGraficoFamiliar(
+                    userId, selectedPeriod, selectedPlantId
+                )
                 val eventos = try {
                     PlantaDao.obtenerEventosRecientesFamiliar(userId, 3, selectedPlantId)
-                } catch (e: Exception) { emptyList() }
+                } catch (e: Exception) {
+                    emptyList()
+                }
 
-                activity?.runOnUiThread {
-                    // Verificamos isAdded para asegurar que el fragmento sigue vivo
+                requireActivity().runOnUiThread {
                     if (!isAdded) return@runOnUiThread
 
                     tvHumidityAvg.text = String.format("%.0f%%", stats["humedad"] ?: 0f)
                     tvTempAvg.text = String.format("%.1f°C", stats["temperatura"] ?: 0f)
                     tvLightAvg.text = String.format("%.0f%%", stats["luz"] ?: 0f)
 
-                    setupExpertChart(graficoData)
+                    setupChart(graficoData)
                     renderEvents(eventos)
                 }
-
             } catch (e: Exception) {
-                Log.e("History", "Error data", e)
+                Log.e("HistoryFragment", "Error cargando datos históricos", e)
             }
         }.start()
     }
 
-    private fun setupExpertChart(data: Map<String, List<DataPointDAO>>) {
+    private fun setupChart(data: Map<String, List<DataPointDAO>>) {
         lineChart.clear()
+        lineChart.setNoDataText("Sin datos para este periodo")
+        lineChart.setNoDataTextColor(Color.GRAY)
 
         if (data.isEmpty() || data["humedad"].isNullOrEmpty()) {
-            lineChart.setNoDataText("Sin datos para este periodo")
-            lineChart.setNoDataTextColor(Color.GRAY)
+            lineChart.invalidate()
             return
         }
 
+        // Configurar gráfico
         lineChart.description.isEnabled = false
         lineChart.legend.isEnabled = false
         lineChart.setDrawGridBackground(false)
@@ -242,64 +299,105 @@ class HistoryFragment : Fragment(R.layout.activity_history) {
         lineChart.axisLeft.textColor = Color.parseColor("#9CA3AF")
         lineChart.axisLeft.setDrawGridLines(true)
         lineChart.axisLeft.gridColor = Color.parseColor("#F3F4F6")
+        lineChart.setTouchEnabled(true)
+        lineChart.setPinchZoom(true)
 
-        lineChart.animateX(1000)
+        // Crear datasets
+        val sets = mutableListOf<com.github.mikephil.charting.interfaces.datasets.ILineDataSet>()
 
-        val sets = ArrayList<com.github.mikephil.charting.interfaces.datasets.ILineDataSet>()
-
-        fun createSet(entries: List<DataPointDAO>?, label: String, colorHex: String, fillDrawableId: Int?): LineDataSet? {
-            if (entries.isNullOrEmpty()) return null
-
-            val entryList = entries.mapIndexed { index, point -> Entry(index.toFloat(), point.value) }
-            val set = LineDataSet(entryList, label)
-
-            val color = Color.parseColor(colorHex)
-            set.color = color
-            set.setCircleColor(color)
-            set.lineWidth = 2.5f
-            set.circleRadius = 0f
-            set.setDrawValues(false)
-            set.mode = LineDataSet.Mode.CUBIC_BEZIER
-
-            if (fillDrawableId != null) {
-                set.setDrawFilled(true)
-                // Usamos requireContext()
-                set.fillDrawable = ContextCompat.getDrawable(requireContext(), fillDrawableId)
+        // Dataset humedad (con relleno)
+        data["humedad"]?.let { humidityData ->
+            if (humidityData.isNotEmpty()) {
+                val entries = humidityData.mapIndexed { index, point ->
+                    Entry(index.toFloat(), point.value)
+                }
+                val set = LineDataSet(entries, "Humedad").apply {
+                    color = Color.parseColor("#2D5A40")
+                    setCircleColor(Color.parseColor("#2D5A40"))
+                    lineWidth = 2.5f
+                    circleRadius = 4f
+                    setDrawValues(false)
+                    mode = LineDataSet.Mode.CUBIC_BEZIER
+                    setDrawFilled(true)
+                    fillDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.gradient_chart)
+                }
+                sets.add(set)
             }
-            return set
         }
 
-        val setHum = createSet(data["humedad"], "Hum", "#2D5A40", R.drawable.gradient_chart)
-        if (setHum != null) sets.add(setHum)
-
-        val setTemp = createSet(data["temperatura"], "Temp", "#EF4444", null)
-        if (setTemp != null) sets.add(setTemp)
-
-        val setLuz = createSet(data["luz"], "Luz", "#F59E0B", null)
-        if (setLuz != null) sets.add(setLuz)
-
-        val lineData = LineData(sets)
-        lineChart.data = lineData
-
-        val labels = data["humedad"]?.map { it.label } ?: emptyList()
-        lineChart.xAxis.valueFormatter = object : ValueFormatter() {
-            override fun getFormattedValue(value: Float): String {
-                val index = value.toInt()
-                return if (index in labels.indices) labels[index] else ""
+        // Dataset temperatura
+        data["temperatura"]?.let { tempData ->
+            if (tempData.isNotEmpty()) {
+                val entries = tempData.mapIndexed { index, point ->
+                    Entry(index.toFloat(), point.value)
+                }
+                val set = LineDataSet(entries, "Temperatura").apply {
+                    color = Color.parseColor("#EF4444")
+                    setCircleColor(Color.parseColor("#EF4444"))
+                    lineWidth = 2f
+                    circleRadius = 4f
+                    setDrawValues(false)
+                    mode = LineDataSet.Mode.CUBIC_BEZIER
+                }
+                sets.add(set)
             }
+        }
+
+        // Dataset luz
+        data["luz"]?.let { lightData ->
+            if (lightData.isNotEmpty()) {
+                val entries = lightData.mapIndexed { index, point ->
+                    Entry(index.toFloat(), point.value)
+                }
+                val set = LineDataSet(entries, "Luz").apply {
+                    color = Color.parseColor("#F59E0B")
+                    setCircleColor(Color.parseColor("#F59E0B"))
+                    lineWidth = 2f
+                    circleRadius = 4f
+                    setDrawValues(false)
+                    mode = LineDataSet.Mode.CUBIC_BEZIER
+                }
+                sets.add(set)
+            }
+        }
+
+        if (sets.isNotEmpty()) {
+            val lineData = LineData(sets)
+            lineChart.data = lineData
+
+            // Configurar eje X con etiquetas
+            val labels = data["humedad"]?.map { it.label } ?: emptyList()
+            lineChart.xAxis.valueFormatter = object : ValueFormatter() {
+                override fun getFormattedValue(value: Float): String {
+                    val index = value.toInt()
+                    return if (index in labels.indices) labels[index] else ""
+                }
+            }
+
+            lineChart.animateX(1000)
         }
 
         lineChart.invalidate()
     }
 
     private fun renderEvents(eventos: List<PlantaDao.EventoDAO>) {
-        val views = listOf(event1, event2, event3)
+        val eventViews = listOf(event1, event2, event3)
 
-        views.forEach { it.visibility = View.GONE }
+        // Ocultar todas primero
+        eventViews.forEach { it.visibility = View.GONE }
+
+        if (eventos.isEmpty()) {
+            event1.visibility = View.VISIBLE
+            event1.findViewById<TextView>(R.id.tvEventTitle).text = "Sin eventos recientes"
+            event1.findViewById<TextView>(R.id.tvEventSubtitle).text = "Todo está tranquilo"
+            event1.findViewById<ImageView>(R.id.imgEventIcon).setImageResource(R.drawable.ic_leaf)
+            event1.findViewById<ImageView>(R.id.imgEventIcon).setColorFilter(Color.parseColor("#9CA3AF"))
+            return
+        }
 
         eventos.forEachIndexed { index, evento ->
-            if (index < views.size) {
-                val view = views[index]
+            if (index < eventViews.size) {
+                val view = eventViews[index]
                 view.visibility = View.VISIBLE
 
                 val icon = view.findViewById<ImageView>(R.id.imgEventIcon)
@@ -325,29 +423,28 @@ class HistoryFragment : Fragment(R.layout.activity_history) {
                 }
             }
         }
-
-        if (eventos.isEmpty()) {
-            event1.visibility = View.VISIBLE
-            event1.findViewById<TextView>(R.id.tvEventTitle).text = "Sin eventos recientes"
-            event1.findViewById<TextView>(R.id.tvEventSubtitle).text = "Todo está tranquilo"
-        }
     }
 
     private fun getRelativeTime(dateString: String): String {
-        val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        try {
+        return try {
+            val format = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
             val date = format.parse(dateString)
             if (date != null) {
-                return DateUtils.getRelativeTimeSpanString(
+                DateUtils.getRelativeTimeSpanString(
                     date.time,
                     System.currentTimeMillis(),
                     DateUtils.MINUTE_IN_MILLIS
                 ).toString()
+            } else {
+                dateString
             }
         } catch (e: Exception) {
-            return dateString
+            dateString
         }
-        return dateString
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        Log.d("HistoryFragment", "onDestroyView")
+    }
 }
