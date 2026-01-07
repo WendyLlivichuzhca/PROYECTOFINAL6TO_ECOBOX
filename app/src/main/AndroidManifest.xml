@@ -2,28 +2,39 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- PERMISOS BÁSICOS -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- Si usas cámara para fotos de plantas -->
+
+    <!-- PERMISOS DE CÁMARA -->
     <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- PERMISOS DE ALMACENAMIENTO - Para versiones antiguas (hasta Android 9) -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <!-- AGREGAR ESTA LÍNEA -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!-- PERMISOS PARA ANDROID 10+ (API 29-32) -->
+    <!-- No se necesitan permisos explícitos para archivos propios de la app -->
+
+    <!-- PERMISOS PARA ANDROID 13+ (API 33+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+
+    <!-- CARACTERÍSTICAS OPCIONALES (no requeridas para que funcione) -->
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
-
-    <!-- Para cámara frontal -->
     <uses-feature
         android:name="android.hardware.camera.front"
         android:required="false" />
-
-    <!-- Para flash de cámara -->
     <uses-feature
         android:name="android.hardware.camera.flash"
         android:required="false" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -36,50 +47,63 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
-        <!-- Login -->
+        <!-- ACTIVIDADES -->
         <activity
             android:name=".presentacion.ui.WelcomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-
             </intent-filter>
         </activity>
 
         <activity
             android:name=".presentacion.ui.RegisterActivity"
             android:exported="false" />
+
         <activity
             android:name=".presentacion.ui.ForgotPasswordActivity"
             android:exported="false" />
 
-        <!-- ... -->
         <activity
             android:name=".presentacion.ui.ResetPasswordActivity"
             android:exported="true"
             android:launchMode="singleTask">
-
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
-                <!-- CONFIGURACIÓN HTTP PARA QUE GMAIL LO ACEPTE -->
                 <data
                     android:host="www.ecobox-app.com"
                     android:pathPrefix="/recuperar"
                     android:scheme="http" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".presentacion.ui.MainActivity"
             android:exported="false" />
+
         <activity
             android:name=".presentacion.ui.CrearPlantaActivity"
             android:exported="false" />
-        <!-- Dentro de <application> -->
+
+        <activity
+            android:name=".presentacion.ui.PlantDetailActivity"
+            android:exported="false" />
+
+        <activity android:name=".presentacion.ui.AlertsActivity" />
+        <activity android:name=".presentacion.ui.AgregarSensorActivity" />
+        <activity android:name=".presentacion.ui.HistorialSeguimientoActivity" />
+        <activity android:name=".presentacion.ui.AgregarSeguimientoActivity" />
+        <activity android:name=".presentacion.ui.SensoresActivity" />
+        <activity android:name=".presentacion.ui.LoginActivity" />
+        <activity
+            android:name=".presentacion.ui.AllEventsActivity"
+            android:exported="false" />
+        <activity android:name=".presentacion.ui.EditarPlantaActivity" />
+
+        <!-- FILE PROVIDER PARA CÁMARA Y COMPARTIR ARCHIVOS -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -89,23 +113,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
-        <activity
-            android:name=".presentacion.ui.PlantDetailActivity"
-            android:exported="false" />
-
-        <activity android:name=".presentacion.ui.AlertsActivity" />
-
-        <activity android:name=".presentacion.ui.SensoresActivity" />
-
-        <activity android:name=".presentacion.ui.AgregarSensorActivity" />
-
-        <activity android:name=".presentacion.ui.LoginActivity" />
-        <activity
-            android:name=".presentacion.ui.AllEventsActivity"
-            android:exported="false" />
-        <activity android:name=".presentacion.ui.EditarPlantaActivity" />
-
 
     </application>
 </manifest>

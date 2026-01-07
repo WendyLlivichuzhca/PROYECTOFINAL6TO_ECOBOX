@@ -2053,4 +2053,407 @@ object PlantaDao {
             else -> String.format("%.1f", valor)
         }
     }
+
+    // =========================================================================
+// FUNCIONES PARA SEGUIMIENTO DE PLANTA - USANDO SOLO TABLAS EXISTENTES
+// =========================================================================
+
+    /**
+     * Obtiene todo el historial de seguimiento de una planta
+     * Usa solo la tabla seguimiento_estado_planta que ya existe
+     */
+    fun obtenerSeguimientoPlanta(plantaId: Long): List<Map<String, Any>> {
+        val seguimientos = mutableListOf<Map<String, Any>>()
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                val sql = """
+                SELECT 
+                    sep.id,
+                    sep.estado,
+                    sep.observaciones,
+                    DATE_FORMAT(sep.fecha_registro, '%d/%m/%Y %H:%i') as fecha_formateada,
+                    sep.fecha_registro,
+                    sep.imagen,
+                    sep.imagen_miniatura,
+                    sep.planta_id,
+                    p.nombrePersonalizado as planta_nombre
+                FROM seguimiento_estado_planta sep
+                INNER JOIN planta p ON sep.planta_id = p.id
+                WHERE sep.planta_id = ?
+                ORDER BY sep.fecha_registro DESC
+            """.trimIndent()
+
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, plantaId)
+                val rs = stmt.executeQuery()
+
+                while (rs.next()) {
+                    // Obtener valores con verificación de NULL
+                    val id = if (rs.getObject("id") != null) rs.getLong("id") else 0L
+                    val estado = rs.getString("estado") ?: ""
+                    val observaciones = rs.getString("observaciones") ?: ""
+                    val fechaRegistro = rs.getString("fecha_registro") ?: ""
+                    val fechaFormateada = rs.getString("fecha_formateada") ?: ""
+                    val imagen = rs.getString("imagen") ?: ""
+                    val imagenMiniatura = rs.getString("imagen_miniatura") ?: ""
+                    val plantaIdValue = if (rs.getObject("planta_id") != null) rs.getLong("planta_id") else plantaId
+                    val plantaNombre = rs.getString("planta_nombre") ?: ""
+
+                    val seguimiento = mapOf<String, Any>(
+                        "id" to id,
+                        "estado" to estado,
+                        "observaciones" to observaciones,
+                        "fecha_registro" to fechaRegistro,
+                        "fecha_formateada" to fechaFormateada,
+                        "imagen" to imagen,
+                        "imagen_miniatura" to imagenMiniatura,
+                        "planta_id" to plantaIdValue,
+                        "planta_nombre" to plantaNombre
+                    )
+                    seguimientos.add(seguimiento)
+                }
+
+                rs.close()
+                stmt.close()
+                conexion.close()
+
+                Log.d("PlantaDao", "Seguimientos encontrados: ${seguimientos.size} para planta $plantaId")
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error obteniendo seguimiento: ${e.message}", e)
+        }
+
+        return seguimientos
+    }
+
+    /**
+     * Agrega un nuevo registro de seguimiento a una planta
+     * Usa la tabla seguimiento_estado_planta existente
+     */
+    fun agregarSeguimientoPlanta(
+        plantaId: Long,
+        estado: String,
+        observaciones: String,
+        imagenPath: String? = null
+    ): Boolean {
+        var insertado = false
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                // Inserción usando la tabla existente
+                val sql = """
+                INSERT INTO seguimiento_estado_planta (
+                    planta_id, 
+                    estado, 
+                    observaciones, 
+                    fecha_registro,
+                    imagen,
+                    imagen_miniatura
+                )
+                VALUES (?, ?, ?, NOW(), ?, ?)
+            """.trimIndent()
+
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, plantaId)
+                stmt.setString(2, estado)
+                stmt.setString(3, observaciones)
+
+                // Manejo de imagen (opcional)
+                if (imagenPath != null && imagenPath.isNotEmpty()) {
+                    stmt.setString(4, imagenPath)
+                    stmt.setString(5, imagenPath) // Misma imagen para miniatura si no se procesa
+                } else {
+                    stmt.setNull(4, java.sql.Types.VARCHAR)
+                    stmt.setNull(5, java.sql.Types.VARCHAR)
+                }
+
+                val filas = stmt.executeUpdate()
+                insertado = filas > 0
+
+                stmt.close()
+
+                // Actualizar el estado en la tabla planta si se insertó correctamente
+                if (insertado) {
+                    actualizarEstadoPlantaActual(plantaId, estado)
+                    Log.d("PlantaDao", "Seguimiento agregado exitosamente")
+                }
+
+                conexion.close()
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error agregando seguimiento: ${e.message}", e)
+        }
+
+        return insertado
+    }
+
+    /**
+     * Actualiza el estado de la planta en la tabla planta
+     * Usa la tabla planta que ya existe
+     */
+    private fun actualizarEstadoPlantaActual(plantaId: Long, estado: String): Boolean {
+        var actualizado = false
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                val sql = """
+                UPDATE planta 
+                SET estado = ? 
+                WHERE id = ?
+            """.trimIndent()
+
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setString(1, estado)
+                stmt.setLong(2, plantaId)
+
+                val filas = stmt.executeUpdate()
+                actualizado = filas > 0
+
+                stmt.close()
+                conexion.close()
+
+                if (actualizado) {
+                    Log.d("PlantaDao", "Estado actualizado en tabla planta: $estado")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error actualizando estado: ${e.message}", e)
+        }
+
+        return actualizado
+    }
+
+    /**
+     * Obtiene el último registro de seguimiento de una planta
+     * Usa solo tablas existentes
+     */
+    fun obtenerUltimoSeguimiento(plantaId: Long): Map<String, Any>? {
+        var ultimo: Map<String, Any>? = null
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                val sql = """
+                SELECT 
+                    sep.id,
+                    sep.estado,
+                    sep.observaciones,
+                    DATE_FORMAT(sep.fecha_registro, '%d/%m/%Y %H:%i') as fecha_formateada,
+                    sep.fecha_registro,
+                    sep.imagen,
+                    sep.imagen_miniatura,
+                    p.nombrePersonalizado as planta_nombre
+                FROM seguimiento_estado_planta sep
+                INNER JOIN planta p ON sep.planta_id = p.id
+                WHERE sep.planta_id = ?
+                ORDER BY sep.fecha_registro DESC
+                LIMIT 1
+            """.trimIndent()
+
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, plantaId)
+                val rs = stmt.executeQuery()
+
+                if (rs.next()) {
+                    // Obtener valores con verificación de NULL segura
+                    val idObj = rs.getObject("id")
+                    val id = if (idObj != null && !rs.wasNull()) rs.getLong("id") else 0L
+
+                    val estadoObj = rs.getObject("estado")
+                    val estado = if (estadoObj != null) estadoObj.toString() else ""
+
+                    val observacionesObj = rs.getObject("observaciones")
+                    val observaciones = if (observacionesObj != null) observacionesObj.toString() else ""
+
+                    val fechaRegistroObj = rs.getObject("fecha_registro")
+                    val fechaRegistro = if (fechaRegistroObj != null) fechaRegistroObj.toString() else ""
+
+                    val fechaFormateadaObj = rs.getObject("fecha_formateada")
+                    val fechaFormateada = if (fechaFormateadaObj != null) fechaFormateadaObj.toString() else ""
+
+                    val imagenObj = rs.getObject("imagen")
+                    val imagen = if (imagenObj != null) imagenObj.toString() else ""
+
+                    val imagenMiniaturaObj = rs.getObject("imagen_miniatura")
+                    val imagenMiniatura = if (imagenMiniaturaObj != null) imagenMiniaturaObj.toString() else ""
+
+                    val plantaNombreObj = rs.getObject("planta_nombre")
+                    val plantaNombre = if (plantaNombreObj != null) plantaNombreObj.toString() else ""
+
+                    ultimo = mapOf<String, Any>(
+                        "id" to id,
+                        "estado" to estado,
+                        "observaciones" to observaciones,
+                        "fecha_registro" to fechaRegistro,
+                        "fecha_formateada" to fechaFormateada,
+                        "imagen" to imagen,
+                        "imagen_miniatura" to imagenMiniatura,
+                        "planta_nombre" to plantaNombre
+                    )
+                }
+
+                rs.close()
+                stmt.close()
+                conexion.close()
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error obteniendo último seguimiento: ${e.message}", e)
+        }
+
+        return ultimo
+    }
+
+    /**
+     * Obtiene estadísticas de seguimiento de una planta
+     * Usa solo la tabla seguimiento_estado_planta existente
+     */
+    fun obtenerEstadisticasSeguimientoPlanta(plantaId: Long): Map<String, Any> {
+        val stats = mutableMapOf<String, Any>()
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                // 1. Total de registros
+                val sqlTotal = """
+                SELECT COUNT(*) as total
+                FROM seguimiento_estado_planta
+                WHERE planta_id = ?
+            """.trimIndent()
+
+                val stmtTotal = conexion.prepareStatement(sqlTotal)
+                stmtTotal.setLong(1, plantaId)
+                val rsTotal = stmtTotal.executeQuery()
+
+                if (rsTotal.next()) {
+                    stats["total_registros"] = rsTotal.getInt("total")
+                }
+                rsTotal.close()
+                stmtTotal.close()
+
+                // 2. Primer registro
+                val sqlPrimero = """
+                SELECT DATE_FORMAT(MIN(fecha_registro), '%d/%m/%Y') as primera_fecha
+                FROM seguimiento_estado_planta
+                WHERE planta_id = ?
+            """.trimIndent()
+
+                val stmtPrimero = conexion.prepareStatement(sqlPrimero)
+                stmtPrimero.setLong(1, plantaId)
+                val rsPrimero = stmtPrimero.executeQuery()
+
+                if (rsPrimero.next()) {
+                    stats["primera_fecha"] = rsPrimero.getString("primera_fecha") ?: "N/A"
+                }
+                rsPrimero.close()
+                stmtPrimero.close()
+
+                // 3. Último registro
+                val sqlUltimo = """
+                SELECT DATE_FORMAT(MAX(fecha_registro), '%d/%m/%Y') as ultima_fecha
+                FROM seguimiento_estado_planta
+                WHERE planta_id = ?
+            """.trimIndent()
+
+                val stmtUltimo = conexion.prepareStatement(sqlUltimo)
+                stmtUltimo.setLong(1, plantaId)
+                val rsUltimo = stmtUltimo.executeQuery()
+
+                if (rsUltimo.next()) {
+                    stats["ultima_fecha"] = rsUltimo.getString("ultima_fecha") ?: "N/A"
+                }
+                rsUltimo.close()
+                stmtUltimo.close()
+
+                // 4. Distribución de estados
+                val sqlEstados = """
+                SELECT 
+                    estado,
+                    COUNT(*) as cantidad
+                FROM seguimiento_estado_planta
+                WHERE planta_id = ?
+                GROUP BY estado
+                ORDER BY cantidad DESC
+            """.trimIndent()
+
+                val stmtEstados = conexion.prepareStatement(sqlEstados)
+                stmtEstados.setLong(1, plantaId)
+                val rsEstados = stmtEstados.executeQuery()
+
+                val distribucion = mutableListOf<Map<String, Any>>()
+                while (rsEstados.next()) {
+                    distribucion.add(mapOf(
+                        "estado" to (rsEstados.getString("estado") ?: ""),
+                        "cantidad" to rsEstados.getInt("cantidad")
+                    ))
+                }
+                stats["distribucion_estados"] = distribucion
+
+                rsEstados.close()
+                stmtEstados.close()
+                conexion.close()
+
+                Log.d("PlantaDao", "Estadísticas obtenidas: $stats")
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error obteniendo estadísticas: ${e.message}", e)
+        }
+
+        return stats
+    }
+
+    /**
+     * Verifica si el usuario tiene acceso a ver el seguimiento de una planta
+     * Usa las tablas familia_usuario y planta existentes
+     */
+    fun verificarAccesoSeguimiento(userId: Long, plantaId: Long): Boolean {
+        var tieneAcceso = false
+        val conexion = MySqlConexion.getConexion()
+
+        try {
+            if (conexion != null) {
+                val sql = """
+                SELECT COUNT(*) as acceso
+                FROM planta p
+                INNER JOIN familia_usuario fu ON p.familia_id = fu.familia_id
+                WHERE fu.usuario_id = ? 
+                  AND fu.activo = 1
+                  AND p.id = ?
+            """.trimIndent()
+
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, userId)
+                stmt.setLong(2, plantaId)
+                val rs = stmt.executeQuery()
+
+                if (rs.next()) {
+                    tieneAcceso = rs.getInt("acceso") > 0
+                }
+
+                rs.close()
+                stmt.close()
+                conexion.close()
+
+                Log.d("PlantaDao", "Usuario $userId tiene acceso a planta $plantaId: $tieneAcceso")
+            }
+        } catch (e: Exception) {
+            Log.e("PlantaDao", "Error verificando acceso: ${e.message}", e)
+        }
+
+        return tieneAcceso
+    }
+
+    /**
+     * Obtiene seguimiento de planta con verificación de acceso
+     */
+    fun obtenerSeguimientoPlantaConAcceso(userId: Long, plantaId: Long): List<Map<String, Any>> {
+        return if (verificarAccesoSeguimiento(userId, plantaId)) {
+            obtenerSeguimientoPlanta(plantaId)
+        } else {
+            emptyList()
+        }
+    }
 }

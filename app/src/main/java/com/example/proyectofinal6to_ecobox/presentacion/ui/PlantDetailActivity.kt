@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -76,7 +77,6 @@ class PlantDetailActivity : AppCompatActivity() {
 
     private lateinit var btnGestionarSensores: MaterialButton
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_plant_detail)
@@ -134,7 +134,6 @@ class PlantDetailActivity : AppCompatActivity() {
         historialTitle = findViewById(R.id.tvHistoryTitle)
 
         btnGestionarSensores = findViewById(R.id.btnGestionarSensores)
-
     }
 
     private fun setupClickListeners() {
@@ -142,8 +141,12 @@ class PlantDetailActivity : AppCompatActivity() {
             waterPlantNow()
         }
 
+        // BOTÓN DE SEGUIMIENTO - NUEVO
+        btnSeguimiento.setOnClickListener {
+            navigateToSeguimiento()
+        }
 
-        // BOTÓN DE SENSORES - NUEVO
+        // BOTÓN DE SENSORES
         btnGestionarSensores.setOnClickListener {
             navigateToSensors()
         }
@@ -169,6 +172,47 @@ class PlantDetailActivity : AppCompatActivity() {
         }
     }
 
+    // NUEVO: Método para navegar al seguimiento
+    private fun navigateToSeguimiento() {
+        if (planta == null || plantaId == -1L) {
+            Toast.makeText(this, "Error: Planta no disponible", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Verificar acceso del usuario en un hilo separado
+        Thread {
+            try {
+                val tieneAcceso = PlantaDao.verificarAccesoSeguimiento(userId, plantaId)
+
+                runOnUiThread {
+                    if (tieneAcceso) {
+                        // Crear intent para ir a la actividad de seguimiento
+                        val intent = Intent(this, HistorialSeguimientoActivity::class.java).apply {
+                            putExtra("PLANTA_ID", plantaId)
+                            putExtra("PLANTA_NOMBRE", plantaNombre)
+                            putExtra("USER_ID", userId)
+                        }
+                        startActivityForResult(intent, SEGUIMIENTO_REQUEST_CODE)
+                    } else {
+                        Toast.makeText(
+                            this,
+                            "No tienes acceso al seguimiento de esta planta",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("PlantDetail", "Error verificando acceso: ${e.message}", e)
+                runOnUiThread {
+                    Toast.makeText(
+                        this,
+                        "Error al verificar acceso: ${e.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }.start()
+    }
 
     private fun navigateToSensors() {
         // Verificar que tenemos los datos de la planta
@@ -209,38 +253,49 @@ class PlantDetailActivity : AppCompatActivity() {
         startActivityForResult(intent, EDIT_PLANT_REQUEST)
     }
 
-    // En el método onActivityResult, agrega setResult:
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
-        if (requestCode == EDIT_PLANT_REQUEST && resultCode == RESULT_OK) {
-            data?.let {
-                val updatedName = it.getStringExtra("UPDATED_NAME") ?: plantaNombre
-                val updatedLocation = it.getStringExtra("UPDATED_LOCATION") ?: plantaUbicacion
-                val updatedPhoto = it.getStringExtra("UPDATED_PHOTO") ?: plantaFoto
+        when (requestCode) {
+            EDIT_PLANT_REQUEST -> {
+                if (resultCode == RESULT_OK) {
+                    data?.let {
+                        val updatedName = it.getStringExtra("UPDATED_NAME") ?: plantaNombre
+                        val updatedLocation = it.getStringExtra("UPDATED_LOCATION") ?: plantaUbicacion
+                        val updatedPhoto = it.getStringExtra("UPDATED_PHOTO") ?: plantaFoto
 
-                // Actualizar UI con los nuevos datos
-                tvPlantName.text = updatedName
-                tvLocation.text = "📍 $updatedLocation"
+                        // Actualizar UI con los nuevos datos
+                        tvPlantName.text = updatedName
+                        tvLocation.text = "📍 $updatedLocation"
 
-                if (updatedPhoto.isNotEmpty()) {
-                    Glide.with(this)
-                        .load(updatedPhoto)
-                        .placeholder(R.drawable.img_plant_placeholder)
-                        .error(R.drawable.img_plant_placeholder)
-                        .centerCrop()
-                        .into(ivPlant)
+                        if (updatedPhoto.isNotEmpty()) {
+                            Glide.with(this)
+                                .load(updatedPhoto)
+                                .placeholder(R.drawable.img_plant_placeholder)
+                                .error(R.drawable.img_plant_placeholder)
+                                .centerCrop()
+                                .into(ivPlant)
+                        }
+
+                        // Enviar resultado a PlantsFragment
+                        val resultIntent = Intent().apply {
+                            putExtra("PLANTA_EDITADA", true)
+                            putExtra("PLANTA_ID_EDITADA", plantaId)
+                            putExtra("PLANTA_NOMBRE_EDITADA", updatedName)
+                        }
+                        setResult(RESULT_OK, resultIntent)
+
+                        Toast.makeText(this, "Planta actualizada correctamente", Toast.LENGTH_SHORT).show()
+                    }
                 }
+            }
 
-                // ¡¡¡AGREGA ESTO!!! Enviar resultado a PlantsFragment
-                val resultIntent = Intent().apply {
-                    putExtra("PLANTA_EDITADA", true)
-                    putExtra("PLANTA_ID_EDITADA", plantaId)
-                    putExtra("PLANTA_NOMBRE_EDITADA", updatedName)
+            SEGUIMIENTO_REQUEST_CODE -> {
+                if (resultCode == RESULT_OK) {
+                    // Recargar datos si se agregó un nuevo seguimiento
+                    loadPlantData()
+                    Toast.makeText(this, "Seguimiento actualizado", Toast.LENGTH_SHORT).show()
                 }
-                setResult(RESULT_OK, resultIntent)
-
-                Toast.makeText(this, "Planta actualizada correctamente", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -737,6 +792,7 @@ class PlantDetailActivity : AppCompatActivity() {
 
     companion object {
         const val EDIT_PLANT_REQUEST = 1001
+        const val SEGUIMIENTO_REQUEST_CODE = 1002  // NUEVA CONSTANTE
 
         fun createIntent(
             context: Context,
@@ -752,7 +808,7 @@ class PlantDetailActivity : AppCompatActivity() {
                 putExtra("PLANT_LIGHT", (datos["luz"] as? Number)?.toFloat() ?: 0f)
                 putExtra("PLANT_STATUS", datos["estado"] as? String ?: "healthy")
                 putExtra("PLANT_PHOTO", planta.foto ?: "")
-                putExtra("PLANT_SENSOR_COUNT", datos["sensorCount"] as? Int ?: 0) // NUEVO
+                putExtra("PLANT_SENSOR_COUNT", datos["sensorCount"] as? Int ?: 0)
             }
         }
 
