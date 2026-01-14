@@ -25,17 +25,34 @@
     <color name="alert_critical_text">#DC2626</color>
     <color name="alert_warning_text">#D97706</color>
     <color name="text_secondary">#6B7280</color>
-    <color name="primary">#2D5A40</color>
     <color name="secondary_text">#6B7280</color>
-    <color name="error">#EF4444</color>
     <color name="circle_primary">#4CAF50</color>
     <!-- Colores existentes -->
     <!-- Colores de estado -->
     <color name="status_healthy_light">#ECFDF5</color>
-    <color name="warning">#F59E0B</color>
-
+    <!-- Colores del chatbot -->
     <color name="status_warning_light">#FEF3C7</color>
+    <!-- Colores principales -->
+    <color name="primary">#4CAF50</color>
 
+    <!-- Colores de fondo -->
+    <color name="error">#F44336</color>
+    <color name="warning">#FF9800</color>
+
+
+    <!-- Colores de texto -->
+
+    <!-- Colores de estados -->
+
+    <!-- Colores de fondo de estados -->
+
+    <!-- Colores de chips y tarjetas -->
+
+    <!-- Colores de sombras -->
+
+    <!-- Colores semitransparentes -->
+
+    <!-- Gradientes -->
     <color name="status_critical_light">#FEF2F2</color>
 
     <color name="status_unknown_light">#F3F4F6</color>

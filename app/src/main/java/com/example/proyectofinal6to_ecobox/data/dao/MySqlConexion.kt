@@ -18,8 +18,8 @@ object MySqlConexion {
 
             // --- DATOS DE CONEXIÓN ---
             val dbName = "base_ecobox"  // Asegúrate que sea el nombre exacto en Workbench
-            //val ip = "10.0.2.2"         // Si usas
-            val ip ="192.168.54.48"
+            val ip = "10.0.2.2"         // Si usas
+            //val ip ="192.168.54.9"
             //val ip = "192.168.0.106"   // Si usas CELULAR FÍSICO (Descomenta y pon tu IP real)
             val port = "3306"
             val usuario = "root"

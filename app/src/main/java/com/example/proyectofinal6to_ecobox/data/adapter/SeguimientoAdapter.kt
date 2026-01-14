@@ -125,7 +125,7 @@ class SeguimientoAdapter(
     }
 
     private fun getColorForEstado(estado: String): Int {
-        return when (estado.toLowerCase()) {
+        return when (estado.lowercase()) {
             "saludable", "excelente" -> R.color.sensor_green
             "necesita agua", "advertencia" -> R.color.warning
             "crítico", "enfermo" -> R.color.error

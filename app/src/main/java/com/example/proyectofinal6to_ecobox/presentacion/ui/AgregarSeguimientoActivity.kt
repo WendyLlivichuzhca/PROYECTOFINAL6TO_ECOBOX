@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.view.Gravity
 import android.view.ViewGroup
@@ -22,6 +23,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import java.io.File
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -40,9 +42,8 @@ class AgregarSeguimientoActivity : AppCompatActivity() {
     private var plantaNombre: String = ""
     private var plantaEspecie: String = ""
     private var currentPhotoPath: String? = null
-    private var selectedImageUri: Uri? = null
+    private var photoFile: File? = null
     private var userId: Long = -1
-    private var photoUri: Uri? = null
 
     // Registro para permisos
     private val requestPermissionLauncher = registerForActivityResult(
@@ -64,11 +65,9 @@ class AgregarSeguimientoActivity : AppCompatActivity() {
     private val takePictureLauncher = registerForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { success ->
-        if (success && photoUri != null) {
+        if (success && photoFile != null) {
             // Foto tomada exitosamente
-            selectedImageUri = photoUri
-            currentPhotoPath = getRealPathFromURI(photoUri!!)
-            mostrarImagenSeleccionada(photoUri!!)
+            mostrarImagenSeleccionada(photoFile!!)
             Toast.makeText(this, "Foto tomada exitosamente", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(this, "Error al tomar la foto", Toast.LENGTH_SHORT).show()
@@ -80,9 +79,8 @@ class AgregarSeguimientoActivity : AppCompatActivity() {
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            selectedImageUri = uri
-            currentPhotoPath = getRealPathFromURI(uri)
-            mostrarImagenSeleccionada(uri)
+            // Para la galería, usar directamente el URI
+            mostrarImagenDesdeUri(uri)
             Toast.makeText(this, "Imagen seleccionada", Toast.LENGTH_SHORT).show()
         }
     }
@@ -205,42 +203,43 @@ class AgregarSeguimientoActivity : AppCompatActivity() {
 
     private fun tomarFoto() {
         try {
-            val photoFile = createImageFile()
+            photoFile = createImageFile()
             if (photoFile != null) {
-                photoUri = FileProvider.getUriForFile(
+                val photoUri = FileProvider.getUriForFile(
                     this,
                     "${packageName}.fileprovider",
-                    photoFile
+                    photoFile!!
                 )
                 takePictureLauncher.launch(photoUri)
             }
         } catch (ex: Exception) {
-            Toast.makeText(this, "Error: ${ex.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Error al crear archivo: ${ex.message}", Toast.LENGTH_SHORT).show()
             ex.printStackTrace()
         }
     }
 
-    @Throws(Exception::class)
+    @Throws(IOException::class)
     private fun createImageFile(): File? {
-        try {
-            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val storageDir = getExternalFilesDir(null)
+        // Crear un nombre único para la imagen
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val imageFileName = "JPEG_${timeStamp}_"
 
-            if (storageDir != null && !storageDir.exists()) {
-                storageDir.mkdirs()
+        // Usar directorio privado de la app
+        val storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+
+        // Crear el directorio si no existe
+        storageDir?.mkdirs()
+
+        return if (storageDir != null) {
+            File.createTempFile(
+                imageFileName,  /* prefix */
+                ".jpg",         /* suffix */
+                storageDir      /* directory */
+            ).apply {
+                currentPhotoPath = absolutePath
             }
-
-            val imageFile = File.createTempFile(
-                "JPEG_${timeStamp}_",
-                ".jpg",
-                storageDir
-            )
-
-            currentPhotoPath = imageFile.absolutePath
-            return imageFile
-        } catch (e: Exception) {
-            e.printStackTrace()
-            throw e
+        } else {
+            null
         }
     }
 
@@ -273,11 +272,7 @@ class AgregarSeguimientoActivity : AppCompatActivity() {
         }
 
         // Determinar la ruta de la imagen
-        val imagenPath = when {
-            currentPhotoPath != null -> currentPhotoPath
-            selectedImageUri != null -> getRealPathFromURI(selectedImageUri!!)
-            else -> null
-        }
+        val imagenPath = currentPhotoPath
 
         // Mostrar diálogo de progreso
         val progressDialog = AlertDialog.Builder(this)
@@ -318,7 +313,7 @@ class AgregarSeguimientoActivity : AppCompatActivity() {
         }.start()
     }
 
-    private fun mostrarImagenSeleccionada(uri: Uri) {
+    private fun mostrarImagenSeleccionada(file: File) {
         // Obtener el LinearLayout interno del card
         val container = btnUploadPhoto.getChildAt(0) as? LinearLayout
         container?.let {
@@ -342,11 +337,12 @@ class AgregarSeguimientoActivity : AppCompatActivity() {
                 scaleType = ImageView.ScaleType.CENTER_CROP
             }
 
-            // Cargar imagen con Glide
+            // Cargar imagen con Glide desde File (no URI)
             Glide.with(this)
-                .load(uri)
+                .load(file)
                 .placeholder(R.drawable.ic_camera)
                 .error(R.drawable.ic_camera)
+                .centerCrop()
                 .into(imageView)
 
             frameLayout.addView(imageView)
@@ -365,9 +361,74 @@ class AgregarSeguimientoActivity : AppCompatActivity() {
                 background = ContextCompat.getDrawable(this@AgregarSeguimientoActivity, R.drawable.shape_circle_white)
                 setOnClickListener {
                     // Restaurar vista original
-                    selectedImageUri = null
                     currentPhotoPath = null
-                    photoUri = null
+                    photoFile = null
+                    restaurarVistaFotoOriginal()
+                }
+            }
+
+            frameLayout.addView(deleteButton)
+            it.addView(frameLayout)
+        }
+    }
+
+    private fun mostrarImagenDesdeUri(uri: Uri) {
+        // Obtener el LinearLayout interno del card
+        val container = btnUploadPhoto.getChildAt(0) as? LinearLayout
+        container?.let {
+            // Limpiar el contenedor
+            it.removeAllViews()
+
+            // Crear un FrameLayout para contener la imagen y el botón de eliminar
+            val frameLayout = FrameLayout(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+
+            // ImageView para mostrar la imagen
+            val imageView = ImageView(this).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+                scaleType = ImageView.ScaleType.CENTER_CROP
+            }
+
+            // Cargar imagen con Glide desde URI
+            Glide.with(this)
+                .load(uri)
+                .placeholder(R.drawable.ic_camera)
+                .error(R.drawable.ic_camera)
+                .centerCrop()
+                .into(imageView)
+
+            frameLayout.addView(imageView)
+
+            // Guardar la ruta de la imagen
+            try {
+                val filePath = getRealPathFromURI(uri)
+                currentPhotoPath = filePath
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            // Botón para eliminar la imagen
+            val deleteButton = ImageButton(this).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    dpToPx(40),
+                    dpToPx(40)
+                ).apply {
+                    gravity = Gravity.END or Gravity.TOP
+                    topMargin = dpToPx(8)
+                    marginEnd = dpToPx(8)
+                }
+                setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+                background = ContextCompat.getDrawable(this@AgregarSeguimientoActivity, R.drawable.shape_circle_white)
+                setOnClickListener {
+                    // Restaurar vista original
+                    currentPhotoPath = null
                     restaurarVistaFotoOriginal()
                 }
             }
@@ -388,37 +449,23 @@ class AgregarSeguimientoActivity : AppCompatActivity() {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun getRealPathFromURI(uri: Uri): String? {
-        var path: String? = null
-
-        // Para Android 10+, usar contentResolver
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val projection = arrayOf(MediaStore.Images.Media.DISPLAY_NAME)
-            contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val displayName = cursor.getString(0)
-                    // Guardar en directorio de la app
-                    val file = File(getExternalFilesDir(null), displayName)
-                    // Copiar el archivo (opcional)
-                    contentResolver.openInputStream(uri)?.use { inputStream ->
-                        file.outputStream().use { outputStream ->
-                            inputStream.copyTo(outputStream)
-                        }
-                    }
-                    path = file.absolutePath
-                }
-            }
-        } else {
-            // Para versiones anteriores
+        return try {
             val projection = arrayOf(MediaStore.Images.Media.DATA)
             contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-                    path = cursor.getString(columnIndex)
+                    cursor.getString(columnIndex)
+                } else {
+                    null
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Si falla, intentar obtener la ruta de otra manera
+            uri.path
         }
-        return path
     }
 
     private fun dpToPx(dp: Int): Int {
