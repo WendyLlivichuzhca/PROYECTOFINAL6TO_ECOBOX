@@ -13,6 +13,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.model.Planta
+import com.example.proyectofinal6to_ecobox.utils.AppConfig
+import com.example.proyectofinal6to_ecobox.utils.ImageUtils
 
 class PlantAdapter(
     private var plantasData: List<PlantaConDatos>,
@@ -70,38 +72,43 @@ class PlantAdapter(
 
         // 4. CARGAR LA FOTO DE LA PLANTA
         if (item.planta.tieneFoto() && item.planta.foto.isNotEmpty()) {
-            // Si la planta tiene foto en la base de datos
             try {
-                Glide.with(context)
-                    .load(item.planta.foto)
-                    .placeholder(R.drawable.bg_leaves) // Imagen por defecto mientras carga
-                    .error(R.drawable.bg_leaves) // Imagen por defecto si hay error
-                    .centerCrop()
-                    .into(holder.ivPlantImage)
+                // Usar ImageUtils para manejar correctamente rutas locales, URLs y Base64
+                ImageUtils.loadPlantImage(
+                    imageData = item.planta.foto,
+                    imageView = holder.ivPlantImage,
+                    placeholderResId = R.drawable.bg_leaves
+                )
             } catch (e: Exception) {
+                android.util.Log.e("PlantAdapter", "❌ Error cargando imagen: ${e.message}")
                 holder.ivPlantImage.setImageResource(R.drawable.bg_leaves)
             }
         } else {
-            // Si no tiene foto, usar la imagen por defecto
+            // Si no tiene foto, usar imagen por defecto
             holder.ivPlantImage.setImageResource(R.drawable.bg_leaves)
         }
 
         // 5. Configuración del Badge de Estado
-        when (item.estado) {
-            "healthy" -> {
+        when (item.estado.lowercase()) {
+            "healthy", "saludable" -> {
                 holder.tvStatusBadge.text = "Saludable"
                 holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_healthy))
                 holder.tvStatusBadge.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E8F5E9"))
-            }
-            "warning" -> {
+            }   
+            "warning", "necesita_agua", "necesita atención", "revisar" -> {
                 holder.tvStatusBadge.text = "Revisar"
                 holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_warning))
                 holder.tvStatusBadge.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#FFF8E1"))
             }
-            "critical" -> {
+            "critical", "peligro", "crítico" -> {
                 holder.tvStatusBadge.text = "Crítico"
                 holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_critical))
                 holder.tvStatusBadge.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#FFEBEE"))
+            }
+            else -> {
+                holder.tvStatusBadge.text = item.estado.capitalize()
+                holder.tvStatusBadge.setTextColor(Color.GRAY)
+                holder.tvStatusBadge.backgroundTintList = ColorStateList.valueOf(Color.LTGRAY)
             }
         }
 

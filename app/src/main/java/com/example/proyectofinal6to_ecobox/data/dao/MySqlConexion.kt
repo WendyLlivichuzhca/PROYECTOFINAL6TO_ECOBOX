@@ -4,6 +4,7 @@ import android.os.StrictMode
 import android.util.Log
 import java.sql.Connection
 import java.sql.DriverManager
+import com.example.proyectofinal6to_ecobox.utils.AppConfig
 
 object MySqlConexion {
 
@@ -17,13 +18,13 @@ object MySqlConexion {
             Class.forName("com.mysql.jdbc.Driver")
 
             // --- DATOS DE CONEXIÓN ---
-            val dbName = "base_ecobox"  // Asegúrate que sea el nombre exacto en Workbench
-            val ip = "10.0.2.2"         // Si usas
-            //val ip ="192.168.54.9"
-            //val ip = "192.168.0.106"   // Si usas CELULAR FÍSICO (Descomenta y pon tu IP real)
-            val port = "3306"
-            val usuario = "root"
-            val contrasena = "1234"     // Tu contraseña de Workbench
+            val dbName = AppConfig.DB_NAME
+            val ip = AppConfig.SERVER_IP
+            //val ip ="192.168.54.30"
+            //val ip = "192.168.0.106"   // Si usas CELULAR FÍSICO
+            val port = AppConfig.DB_PORT
+            val usuario = AppConfig.DB_USER
+            val contrasena = AppConfig.DB_PASSWORD
 
             // --- URL OPTIMIZADA ---
             // Agregamos connectTimeout para que no se quede colgado si falla

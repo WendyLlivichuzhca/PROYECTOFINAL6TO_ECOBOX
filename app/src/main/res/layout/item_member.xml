@@ -1,34 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/cardMember"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
     android:layout_marginHorizontal="16dp"
-    app:cardCornerRadius="20dp"
-    app:cardElevation="4dp"
-    app:strokeWidth="0dp">
+    android:layout_marginBottom="12dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardBackgroundColor="#FFFFFF"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:rippleColor="#E8F5E9"
+    app:strokeColor="#EEF2F6"
+    app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp"
-        android:background="@drawable/bg_card_gradient_white">
+        android:padding="16dp">
 
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/ivMemberAvatar"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:src="@drawable/ic_user"
-            android:padding="10dp"
-            android:background="@drawable/gradient_avatar"
-            app:shapeAppearanceOverlay="@style/CircleImage"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/cardAvatar"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/gradient_avatar_green"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:tint="@color/white" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/gradient_avatar_green"
+                android:clipToOutline="true" />
+
+            <TextView
+                android:id="@+id/tvAvatarInitial"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:text="M"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:text="M" />
+
+            <View
+                android:id="@+id/viewOnlineStatus"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:background="@drawable/bg_online_dot"
+                android:translationZ="2dp"
+                android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <ImageView
+            android:id="@+id/ivOptions"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="4dp"
+            android:src="@drawable/ic_more_vert"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="#9E9E9E" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -38,40 +81,75 @@
             android:orientation="vertical"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/tvMemberRole"
-            app:layout_constraintStart_toEndOf="@id/ivMemberAvatar"
+            app:layout_constraintStart_toEndOf="@id/cardAvatar"
             app:layout_constraintTop_toTopOf="parent">
 
             <TextView
                 android:id="@+id/tvMemberName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Nombre"
-                android:textColor="#1A1C1E"
-                android:textSize="17sp"
+                android:ellipsize="end"
                 android:fontFamily="sans-serif-medium"
-                android:textStyle="bold" />
+                android:maxLines="1"
+                android:text="María Rodríguez"
+                android:textColor="#1A1C1E"
+                android:textSize="16sp"
+                tools:text="María Rodríguez" />
 
             <TextView
                 android:id="@+id/tvMemberEmail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="email@example.com"
-                android:textColor="#8E9199"
-                android:textSize="13sp" />
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="maria@email.com"
+                android:textColor="#757575"
+                android:textSize="13sp"
+                tools:text="maria@email.com" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="12dp"
+                    android:layout_height="12dp"
+                    android:src="@drawable/ic_time"
+                    app:tint="#9E9E9E" />
+
+                <TextView
+                    android:id="@+id/tvLastActivity"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="Hoy, 10:30 AM"
+                    android:textColor="#9E9E9E"
+                    android:textSize="12sp"
+                    tools:text="Hoy, 10:30 AM" />
+            </LinearLayout>
         </LinearLayout>
 
         <TextView
             android:id="@+id/tvMemberRole"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:background="@drawable/bg_badge_role"
             android:paddingHorizontal="12dp"
-            android:paddingVertical="4dp"
-            android:text="Rol"
-            android:textSize="11sp"
+            android:paddingVertical="6dp"
+            android:text="Admin"
+            android:textAllCaps="false"
+            android:textColor="#2E7D32"
+            android:textSize="12sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toBottomOf="@id/ivOptions"
+            app:layout_constraintVertical_bias="1.0"
+            tools:text="Admin" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

@@ -20,6 +20,7 @@ import com.bumptech.glide.Glide
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.data.model.Planta
+import com.example.proyectofinal6to_ecobox.utils.ImageUtils
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.Entry
@@ -269,12 +270,11 @@ class PlantDetailActivity : AppCompatActivity() {
                         tvLocation.text = "📍 $updatedLocation"
 
                         if (updatedPhoto.isNotEmpty()) {
-                            Glide.with(this)
-                                .load(updatedPhoto)
-                                .placeholder(R.drawable.img_plant_placeholder)
-                                .error(R.drawable.img_plant_placeholder)
-                                .centerCrop()
-                                .into(ivPlant)
+                            ImageUtils.loadPlantImage(
+                                imageData = updatedPhoto,
+                                imageView = ivPlant,
+                                placeholderResId = R.drawable.img_plant_placeholder
+                            )
                         }
 
                         // Enviar resultado a PlantsFragment
@@ -400,12 +400,11 @@ class PlantDetailActivity : AppCompatActivity() {
         // Cargar la foto
         if (fotoUrl.isNotEmpty()) {
             try {
-                Glide.with(this)
-                    .load(fotoUrl)
-                    .placeholder(R.drawable.img_plant_placeholder)
-                    .error(R.drawable.img_plant_placeholder)
-                    .centerCrop()
-                    .into(ivPlant)
+                ImageUtils.loadPlantImage(
+                    imageData = fotoUrl,
+                    imageView = ivPlant,
+                    placeholderResId = R.drawable.img_plant_placeholder
+                )
             } catch (e: Exception) {
                 ivPlant.setImageResource(R.drawable.img_plant_placeholder)
             }

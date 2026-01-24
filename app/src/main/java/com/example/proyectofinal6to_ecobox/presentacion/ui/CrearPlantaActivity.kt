@@ -12,6 +12,8 @@ import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.FamiliaDao
 import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.data.model.Planta
+import com.example.proyectofinal6to_ecobox.utils.AppConfig
+import com.example.proyectofinal6to_ecobox.utils.ImageUtils
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -20,6 +22,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.DataOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import org.json.JSONObject
 
 class CrearPlantaActivity : AppCompatActivity() {
 
@@ -42,6 +49,7 @@ class CrearPlantaActivity : AppCompatActivity() {
 
     // Variables
     private var selectedImageUri: Uri? = null
+    private var selectedImagePath: String? = null  // Nueva: ruta del archivo copiado
     private var userId: Long = -1
     private var familiaIdSeleccionada: Long = -1
 
@@ -73,8 +81,43 @@ class CrearPlantaActivity : AppCompatActivity() {
             val data: Intent? = result.data
             data?.data?.let { uri ->
                 selectedImageUri = uri
-                showSelectedImage(uri)
-                Log.d("CrearPlanta", "Imagen seleccionada: $uri")
+                Log.d("CrearPlanta", "URI seleccionado: $uri")
+
+                // Copiar imagen a almacenamiento interno para evitar problemas de permisos
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val fileName = "planta_${System.currentTimeMillis()}"
+                        val copiedPath = ImageUtils.copyUriToInternalStorage(
+                            context = this@CrearPlantaActivity,
+                            uri = uri,
+                            fileName = fileName
+                        )
+
+                        withContext(Dispatchers.Main) {
+                            if (copiedPath != null) {
+                                selectedImagePath = copiedPath
+                                showSelectedImage(copiedPath)
+                                Log.d("CrearPlanta", "Imagen copiada a: $copiedPath")
+                            } else {
+                                Toast.makeText(
+                                    this@CrearPlantaActivity,
+                                    "Error al procesar la imagen",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                Log.e("CrearPlanta", "Error copiando imagen")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("CrearPlanta", "Error procesando imagen: ${e.message}", e)
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                this@CrearPlantaActivity,
+                                "Error al procesar la imagen: ${e.message}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
             }
         }
     }
@@ -239,11 +282,19 @@ class CrearPlantaActivity : AppCompatActivity() {
         imagePickerLauncher.launch(intent)
     }
 
-    private fun showSelectedImage(uri: Uri) {
+    private fun showSelectedImage(imagePath: String) {
         ivPlantPreview.visibility = android.view.View.VISIBLE
-        ivPlantPreview.setImageURI(uri)
-        tvNoFileSelected.text = "Archivo seleccionado"
-        tvNoFileSelected.setTextColor(resources.getColor(R.color.eco_primary, null))
+        
+        // Cargar desde archivo local
+        val file = File(imagePath)
+        if (file.exists()) {
+            ivPlantPreview.setImageURI(Uri.fromFile(file))
+            tvNoFileSelected.text = "Archivo seleccionado"
+            tvNoFileSelected.setTextColor(resources.getColor(R.color.eco_primary, null))
+        } else {
+            Log.e("CrearPlanta", "Archivo no existe: $imagePath")
+            tvNoFileSelected.text = "Error al cargar imagen"
+        }
     }
 
     private fun guardarPlanta() {
@@ -262,14 +313,31 @@ class CrearPlantaActivity : AppCompatActivity() {
 
         // Obtener otros datos del formulario
         val descripcion = etPlantDesc.text.toString().trim()
-        val estado = spinnerStatus.text.toString()
-        val aspecto = spinnerAppearance.text.toString()
+        // Obtener otros datos del formulario y mapear a claves del backend
+        val estadoCapturado = spinnerStatus.text.toString()
+        val aspectoCapturado = spinnerAppearance.text.toString()
 
-        // Obtener especie del campo de entrada
+        val estado = when (estadoCapturado) {
+            "Saludable" -> "saludable"
+            "Necesita agua" -> "necesita_agua"
+            "En Peligro", "Peligro" -> "peligro"
+            "Normal" -> "normal"
+            else -> "normal"
+        }
+
+        val aspecto = when (aspectoCapturado) {
+            "Normal" -> "normal"
+            "Floreciendo" -> "floreciendo"
+            "Con Frutos" -> "con_frutos"
+            "Hojas Amarillas" -> "hojas_amarillas"
+            "Crecimiento Lento" -> "crecimiento_lento"
+            "Exuberante" -> "exuberante"
+            else -> "normal"
+        }
         val especie = etPlantSpecies.text.toString().trim()
 
-        // Obtener la foto (URI como string)
-        val foto = selectedImageUri?.toString() ?: ""
+        // Obtener la foto (ruta del archivo copiado)
+        val foto = selectedImagePath ?: ""
 
         // Ubicación por defecto
         val ubicacion = ""
@@ -278,7 +346,7 @@ class CrearPlantaActivity : AppCompatActivity() {
         Log.d("CrearPlanta", "=== DATOS CAPTURADOS ===")
         Log.d("CrearPlanta", "Nombre: $nombrePlanta")
         Log.d("CrearPlanta", "Especie: '$especie'")
-        Log.d("CrearPlanta", "Foto URI: $foto")
+        Log.d("CrearPlanta", "Foto Path: $foto")
         Log.d("CrearPlanta", "Descripción: $descripcion")
         Log.d("CrearPlanta", "Familia ID: $familiaIdSeleccionada")
         Log.d("CrearPlanta", "Estado: $estado")
@@ -290,28 +358,18 @@ class CrearPlantaActivity : AppCompatActivity() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-
-                val nuevaPlanta = Planta()
-
-                // Establecer todos los campos usando setters
-                nuevaPlanta.nombre = nombrePlanta
-                nuevaPlanta.especie = especie  // ¡Especie capturada!
-                nuevaPlanta.fechaCreacion = "" // La BD usará NOW()
-                nuevaPlanta.descripcion = descripcion
-                nuevaPlanta.familiaId = familiaIdSeleccionada
-                nuevaPlanta.ubicacion = ubicacion
-                nuevaPlanta.aspecto = aspecto
-                nuevaPlanta.estado = estado
-                nuevaPlanta.foto = foto  // ¡Foto capturada!
-
-                // LOG del objeto completo
-                Log.d("CrearPlanta", "Objeto Planta creado: $nuevaPlanta")
-                Log.d("CrearPlanta", "Especie: ${nuevaPlanta.especie}")
-                Log.d("CrearPlanta", "Foto: ${nuevaPlanta.foto}")
-
-                // Insertar en la base de datos
-                val exito = PlantaDao.insertarPlanta(nuevaPlanta, userId)
-                Log.d("CrearPlanta", "Resultado inserción: $exito")
+                // Subir imagen al backend y crear planta usando la API de Django
+                val exito = crearPlantaEnBackend(
+                    nombrePlanta = nombrePlanta,
+                    especie = especie,
+                    descripcion = descripcion,
+                    familiaId = familiaIdSeleccionada,
+                    estado = estado,
+                    aspecto = aspecto,
+                    fotoPath = foto
+                )
+                
+                Log.d("CrearPlanta", "Resultado creación en backend: $exito")
 
                 withContext(Dispatchers.Main) {
                     btnSavePlant.isEnabled = true
@@ -350,6 +408,95 @@ class CrearPlantaActivity : AppCompatActivity() {
                     ).show()
                 }
             }
+        }
+    }
+
+    /**
+     * Crea una planta en el backend usando la API de Django
+     * Sube la imagen si existe y retorna true si fue exitoso
+     */
+    private fun crearPlantaEnBackend(
+        nombrePlanta: String,
+        especie: String,
+        descripcion: String,
+        familiaId: Long,
+        estado: String,
+        aspecto: String,
+        fotoPath: String?
+    ): Boolean {
+        return try {
+            val url = URL("${AppConfig.API_BASE_URL}plantas/")
+            val boundary = "----WebKitFormBoundary" + System.currentTimeMillis()
+            
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.doOutput = true
+            connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+            
+            // --- NUEVO: Obtener y enviar el token de Django ---
+            val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
+            val token = prefs.getString("auth_token", null)
+            
+            if (token != null) {
+                connection.setRequestProperty("Authorization", "Token $token")
+                Log.d("CrearPlanta", "Token de Django enviado: Token $token")
+            } else {
+                Log.w("CrearPlanta", "⚠️ No se encontró token de Django - la petición podría fallar")
+            }
+            
+            val outputStream = DataOutputStream(connection.outputStream)
+            
+            // Agregar campos de texto
+            fun writeField(name: String, value: String) {
+                outputStream.writeBytes("--$boundary\r\n")
+                outputStream.writeBytes("Content-Disposition: form-data; name=\"$name\"\r\n\r\n")
+                outputStream.writeBytes("$value\r\n")
+            }
+            
+            writeField("nombrePersonalizado", nombrePlanta)
+            writeField("especie", especie)
+            writeField("descripcion", descripcion)
+            writeField("familia", familiaId.toString())
+            writeField("estado", estado)
+            writeField("aspecto", aspecto)
+            
+            // Agregar imagen si existe
+            if (!fotoPath.isNullOrEmpty()) {
+                val file = File(fotoPath)
+                if (file.exists()) {
+                    outputStream.writeBytes("--$boundary\r\n")
+                    outputStream.writeBytes("Content-Disposition: form-data; name=\"foto\"; filename=\"${file.name}\"\r\n")
+                    outputStream.writeBytes("Content-Type: image/jpeg\r\n\r\n")
+                    
+                    file.inputStream().use { input ->
+                        input.copyTo(outputStream)
+                    }
+                    outputStream.writeBytes("\r\n")
+                    Log.d("CrearPlanta", "Imagen adjuntada: ${file.name}, tamaño: ${file.length()} bytes")
+                }
+            }
+            
+            // Finalizar multipart
+            outputStream.writeBytes("--$boundary--\r\n")
+            outputStream.flush()
+            outputStream.close()
+            
+            // Leer respuesta
+            val responseCode = connection.responseCode
+            Log.d("CrearPlanta", "Código de respuesta del backend: $responseCode")
+            
+            if (responseCode == HttpURLConnection.HTTP_CREATED || responseCode == HttpURLConnection.HTTP_OK) {
+                val response = connection.inputStream.bufferedReader().use { it.readText() }
+                Log.d("CrearPlanta", "Respuesta del backend: $response")
+                true
+            } else {
+                val errorResponse = connection.errorStream?.bufferedReader()?.use { it.readText() }
+                Log.e("CrearPlanta", "Error del backend: $errorResponse")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e("CrearPlanta", "Error en crearPlantaEnBackend: ${e.message}", e)
+            false
         }
     }
 

@@ -1,4 +1,35 @@
 <resources>
     <string name="app_name">PROYECTOFINAL6TO_ECOBOX</string>
     <string name="cambiar_foto">Cambiar foto de perfil</string>
+    <!-- Families Fragment -->
+    <string name="mis_familias">🌿 Mis Familias</string>
+    <string name="comparte_cuidado_plantas">Comparte el cuidado de tus plantas con seres queridos</string>
+    <string name="familias">Familias</string>
+    <string name="miembros">Miembros</string>
+    <string name="unirse">Unirse</string>
+    <string name="crear_nueva">Crear Nueva</string>
+    <string name="nueva_familia">Nueva Familia</string>
+    <string name="cargando_familias">Cargando familias…</string>
+    <string name="no_tienes_familias">No tienes familias aún</string>
+    <string name="crea_o_unete_familia">Crea tu primera familia o únete a una existente</string>
+    <string name="crear_primera_familia">Crear Mi Primera Familia</string>
+    <string name="decorative_plant">Decoración planta</string>
+    <string name="decorative_leaf">Decoración hoja</string>
+    <string name="empty_family_icon">Icono familia vacía</string>
+
+    <!-- strings.xml -->
+    <string name="just_now">Ahora mismo</string>
+    <plurals name="minutes_ago">
+        <item quantity="one">Hace 1 minuto</item>
+        <item quantity="other">Hace %d minutos</item>
+    </plurals>
+    <plurals name="hours_ago">
+        <item quantity="one">Hace 1 hora</item>
+        <item quantity="other">Hace %d horas</item>
+    </plurals>
+    <plurals name="days_ago">
+        <item quantity="one">Hace 1 día</item>
+        <item quantity="other">Hace %d días</item>
+    </plurals>
+    <string name="plants_count_format">%d plantas</string>
 </resources>

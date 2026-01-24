@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+    <!-- Maceta -->
+    <path
+        android:pathData="M30,60 L50,60 L55,70 L25,70 Z"
+        android:fillColor="#8D6E63"/>
+    <!-- Planta -->
+    <path
+        android:pathData="M40,20 C45,15 50,10 55,20 C60,30 50,40 40,50 C30,40 20,30 25,20 C30,10 35,15 40,20 Z"
+        android:fillColor="#4CAF50"/>
+    <!-- Hojas -->
+    <path
+        android:pathData="M25,35 Q15,25 20,15 Q25,20 25,35 Z"
+        android:fillColor="#388E3C"/>
+    <path
+        android:pathData="M55,35 Q65,25 60,15 Q55,20 55,35 Z"
+        android:fillColor="#388E3C"/>
+</vector>

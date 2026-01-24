@@ -27,34 +27,23 @@
     <color name="text_secondary">#6B7280</color>
     <color name="secondary_text">#6B7280</color>
     <color name="circle_primary">#4CAF50</color>
-    <!-- Colores existentes -->
-    <!-- Colores de estado -->
     <color name="status_healthy_light">#ECFDF5</color>
-    <!-- Colores del chatbot -->
     <color name="status_warning_light">#FEF3C7</color>
-    <!-- Colores principales -->
     <color name="primary">#4CAF50</color>
-
-    <!-- Colores de fondo -->
     <color name="error">#F44336</color>
     <color name="warning">#FF9800</color>
-
-
-    <!-- Colores de texto -->
-
-    <!-- Colores de estados -->
-
-    <!-- Colores de fondo de estados -->
-
-    <!-- Colores de chips y tarjetas -->
-
-    <!-- Colores de sombras -->
-
-    <!-- Colores semitransparentes -->
-
-    <!-- Gradientes -->
     <color name="status_critical_light">#FEF2F2</color>
-
     <color name="status_unknown_light">#F3F4F6</color>
-
+    <color name="primary_dark">#1B5E20</color>
+    <color name="primary_light">#4CAF50</color>
+    <color name="accent">#388E3C</color>
+    <color name="background_gray">#F8FCF8</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="border_light">#F0F0F0</color>
+    <color name="light_blue">#BBDEFB</color>
+    <color name="light_gray">#E0E0E0</color>
+    <color name="medium_gray">#BDBDBD</color>
+    <color name="brown">#8D6E63</color>
+    <color name="blue_gray">#78909C</color>
+    <color name="green">#4CAF50</color>
 </resources>

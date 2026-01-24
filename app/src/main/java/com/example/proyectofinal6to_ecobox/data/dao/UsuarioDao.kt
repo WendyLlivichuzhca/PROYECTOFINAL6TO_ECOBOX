@@ -239,12 +239,39 @@ object UsuarioDao {
                 stmt.setString(1, email)
                 val rs = stmt.executeQuery()
                 if (rs.next()) id = rs.getLong("id")
+                rs.close()
+                stmt.close()
                 conexion.close()
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
         return id
+    }
+
+    /**
+     * Obtiene el token de Django de la tabla authtoken_token para un usuario específico
+     */
+    fun obtenerTokenPorUsuario(userId: Long): String? {
+        var token: String? = null
+        val conexion = MySqlConexion.getConexion()
+        try {
+            if (conexion != null) {
+                val sql = "SELECT `key` FROM ${Tablas.AUTH_TOKEN} WHERE user_id = ?"
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, userId)
+                val rs = stmt.executeQuery()
+                if (rs.next()) {
+                    token = rs.getString("key")
+                }
+                rs.close()
+                stmt.close()
+                conexion.close()
+            }
+        } catch (e: Exception) {
+            Log.e("UsuarioDao", "Error obteniendo token: ${e.message}")
+        }
+        return token
     }
 
     // --- OBTENER PERFIL COMPLETO ---

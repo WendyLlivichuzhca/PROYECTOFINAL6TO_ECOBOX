@@ -1,4 +1,4 @@
-package com.example.proyectofinal6to_ecobox.ui.adapters
+package com.example.proyectofinal6to_ecobox.data.adapter
 
 import android.view.LayoutInflater
 import android.view.View

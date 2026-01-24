@@ -45,7 +45,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PROYECTOFINAL6TO_ECOBOX"
         android:usesCleartextTraffic="true"
-        tools:targetApi="31">
+        android:enableOnBackInvokedCallback="true"
+        tools:targetApi="33">
 
         <!-- ACTIVIDADES -->
         <activity
@@ -71,8 +72,10 @@
             android:launchMode="singleTask">
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
                     android:host="www.ecobox-app.com"
                     android:pathPrefix="/recuperar"

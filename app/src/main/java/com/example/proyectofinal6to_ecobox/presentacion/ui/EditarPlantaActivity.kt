@@ -15,6 +15,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.example.proyectofinal6to_ecobox.utils.ImageUtils
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.Executors
@@ -149,24 +150,11 @@ class EditarPlantaActivity : AppCompatActivity() {
 
     private fun cargarFoto(fotoPath: String) {
         try {
-            if (fotoPath.startsWith("http")) {
-                Glide.with(this)
-                    .load(fotoPath)
-                    .placeholder(R.drawable.ic_plant)
-                    .error(R.drawable.ic_plant)
-                    .into(ivPlanta)
-            } else {
-                val file = File(fotoPath)
-                if (file.exists()) {
-                    Glide.with(this)
-                        .load(file)
-                        .placeholder(R.drawable.ic_plant)
-                        .error(R.drawable.ic_plant)
-                        .into(ivPlanta)
-                } else {
-                    ivPlanta.setImageResource(R.drawable.ic_plant)
-                }
-            }
+            ImageUtils.loadPlantImage(
+                imageData = fotoPath,
+                imageView = ivPlanta,
+                placeholderResId = R.drawable.ic_plant
+            )
             btnEliminarFoto.visibility = View.VISIBLE
         } catch (e: Exception) {
             e.printStackTrace()

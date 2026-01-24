@@ -6,6 +6,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.text.method.HideReturnsTransformationMethod
 import android.text.method.PasswordTransformationMethod
+import android.util.Log
 import android.util.Patterns
 import android.view.View
 import android.view.ViewGroup
@@ -211,6 +212,15 @@ class LoginActivity : AppCompatActivity() {
 
         editor.putLong("user_id", userId)
         editor.putString("user_email", email)
+
+        // --- NUEVO: Obtener y guardar el token de Django ---
+        val token = UsuarioDao.obtenerTokenPorUsuario(userId)
+        if (token != null) {
+            editor.putString("auth_token", token)
+            Log.d("LoginActivity", "Token guardado en SharedPreferences: Token $token")
+        } else {
+            Log.w("LoginActivity", "No se encontró token para el usuario $userId")
+        }
 
         // --- NUEVO: Guardar bandera solo si el usuario quiso ---
         if (isRememberMeChecked) {

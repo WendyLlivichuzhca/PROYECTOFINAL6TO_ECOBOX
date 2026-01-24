@@ -83,4 +83,6 @@ dependencies {
     implementation ("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation ("com.github.bumptech.glide:glide:4.16.0")
 
+    // Interceptor de Logging para OkHttp/Retrofit
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 }

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Casa (cuerpo principal) -->
+    <path
+        android:pathData="M60,20 L100,50 L100,90 H80 V70 H40 V90 H20 V50 Z"
+        android:fillColor="#FFE0E0E0"
+        android:strokeColor="#FFBDBDBD"
+        android:strokeWidth="2"/>
+
+    <!-- Puerta -->
+    <path
+        android:pathData="M55,60 L55,90 H65 V60 Z"
+        android:fillColor="#FF8D6E63"/>
+
+    <!-- Ventana izquierda (rectángulo) -->
+    <path
+        android:pathData="M30,55 L45,55 L45,70 L30,70 Z"
+        android:fillColor="#FFBBDEFB"/>
+
+    <!-- Ventana derecha (rectángulo) -->
+    <path
+        android:pathData="M75,55 L90,55 L90,70 L75,70 Z"
+        android:fillColor="#FFBBDEFB"/>
+
+    <!-- Techo -->
+    <path
+        android:pathData="M20,50 L60,20 L100,50"
+        android:strokeColor="#FF78909C"
+        android:strokeWidth="3"
+        android:fillColor="#00000000"/> <!-- Transparent -->
+
+    <!-- Planta junto a la casa -->
+    <path
+        android:pathData="M105,85 Q110,70 115,85 Q110,100 105,85 Z"
+        android:fillColor="#FF4CAF50"/>
+</vector>

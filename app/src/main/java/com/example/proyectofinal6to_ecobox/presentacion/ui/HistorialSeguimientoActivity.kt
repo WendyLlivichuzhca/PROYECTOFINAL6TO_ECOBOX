@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
-import com.example.proyectofinal6to_ecobox.ui.adapters.SeguimientoAdapter
+import com.example.proyectofinal6to_ecobox.data.adapter.SeguimientoAdapter
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 
 class HistorialSeguimientoActivity : AppCompatActivity() {
