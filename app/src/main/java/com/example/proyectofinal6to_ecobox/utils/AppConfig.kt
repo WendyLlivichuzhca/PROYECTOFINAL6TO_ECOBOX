@@ -6,8 +6,8 @@ object AppConfig {
     // - Para dispositivo físico en misma red: "192.168.0.106" (IP real de tu PC)
     // - Para producción: Dominio real
     
-    const val SERVER_IP = "10.0.2.2"  // Android Emulator (localhost del host)
-    //const val SERVER_IP = "192.168.0.106"  // Descomentar para dispositivo físico
+    //const val SERVER_IP = "10.0.2.2"  // Android Emulator (localhost del host)
+    const val SERVER_IP = "192.168.0.106"  // Descomentar para dispositivo físico
     
     // Configuración de Base de Datos
     const val DB_PORT = "3306" // Puerto MySQL

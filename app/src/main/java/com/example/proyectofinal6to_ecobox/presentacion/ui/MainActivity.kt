@@ -26,20 +26,41 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContentView(R.layout.activity_main)
+        
+        setupNotifications()
         setupNavigation()
     }
 
+    private fun setupNotifications() {
+        // 1. Crear el canal (Solo Android 8.0+)
+        com.example.proyectofinal6to_ecobox.utils.NotificationHelper.createNotificationChannel(this)
+
+        // 2. Programar el monitoreo en segundo plano
+        com.example.proyectofinal6to_ecobox.data.worker.EcoBoxAlertWorker.schedulePeriodicWork(this)
+
+        // 3. Solicitar permiso en Android 13+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                androidx.core.app.ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                    101
+                )
+            }
+        }
+    }
+
     private fun setupNavigation() {
-        // 1. Obtener NavController de forma segura
+        // ... (resto del código existente)
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         val navController = navHostFragment.navController
 
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
-
-        // 2. Vincular BottomNav con NavController - ESTO ES SUFICIENTE
+        val bottomNav = findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNavigation)
         NavigationUI.setupWithNavController(bottomNav, navController)
-
-
     }
 }

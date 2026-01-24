@@ -85,4 +85,8 @@ dependencies {
 
     // Interceptor de Logging para OkHttp/Retrofit
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    // WorkManager para notificaciones en segundo plano
+    val workVersion = "2.9.0"
+    implementation("androidx.work:work-runtime-ktx:$workVersion")
 }

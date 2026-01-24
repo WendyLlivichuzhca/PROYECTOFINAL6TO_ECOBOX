@@ -23,6 +23,11 @@
     <!-- PERMISOS PARA ANDROID 13+ (API 33+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    
+    <!-- PERMISOS DE NOTIFICACIONES (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <!-- CARACTERÍSTICAS OPCIONALES (no requeridas para que funcione) -->
     <uses-feature
@@ -105,6 +110,16 @@
             android:name=".presentacion.ui.AllEventsActivity"
             android:exported="false" />
         <activity android:name=".presentacion.ui.EditarPlantaActivity" />
+
+        <receiver
+            android:name=".data.worker.EcoBoxBootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
 
         <!-- FILE PROVIDER PARA CÁMARA Y COMPARTIR ARCHIVOS -->
         <provider

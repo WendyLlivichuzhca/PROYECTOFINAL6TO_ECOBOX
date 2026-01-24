@@ -29,6 +29,12 @@
         tools:layout="@layout/fragment_history" />
 
     <fragment
+        android:id="@+id/nav_alerts"
+        android:name="com.example.proyectofinal6to_ecobox.fragment.AlertaPlantasFragment"
+        android:label="Alertas de Plantas"
+        tools:layout="@layout/fragment_alerta_plantas" />
+
+    <fragment
         android:id="@+id/nav_profile"
         android:name="com.example.proyectofinal6to_ecobox.fragment.ProfileFragment"
         android:label="Perfil"

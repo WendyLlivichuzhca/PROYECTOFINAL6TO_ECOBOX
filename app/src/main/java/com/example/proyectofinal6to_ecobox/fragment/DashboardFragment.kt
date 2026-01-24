@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.presentacion.ui.AlertsActivity
+import com.example.proyectofinal6to_ecobox.presentacion.ui.ChatbotBottomSheet
 
 class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
@@ -38,6 +39,13 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         }
         btnAlerts.setOnClickListener(goToAlerts)
         cardAlertCritical.setOnClickListener(goToAlerts)
+
+        // FAB Chatbot
+        val fabChatbot = view.findViewById<View>(R.id.fabChatbot)
+        fabChatbot.setOnClickListener {
+            val chatbotSheet = ChatbotBottomSheet.newInstance()
+            chatbotSheet.show(childFragmentManager, ChatbotBottomSheet.TAG)
+        }
     }
 
     private fun cargarEstadisticas(view: View, userId: Long) {
