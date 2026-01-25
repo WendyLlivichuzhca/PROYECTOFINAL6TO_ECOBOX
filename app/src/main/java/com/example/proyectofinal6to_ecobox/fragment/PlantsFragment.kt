@@ -5,17 +5,20 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.launch
 import com.example.proyectofinal6to_ecobox.data.network.*
 import com.example.proyectofinal6to_ecobox.R
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
 import com.example.proyectofinal6to_ecobox.data.adapter.PlantAdapter
 import com.example.proyectofinal6to_ecobox.data.adapter.PlantAdapter.PlantaConDatos
 import com.example.proyectofinal6to_ecobox.presentacion.ui.CrearPlantaActivity
@@ -128,41 +131,80 @@ class PlantsFragment : Fragment(R.layout.fragment_plants) {
                 val response = api.getMyPlants("Token $token")
                 
                 if (response.isSuccessful && response.body() != null) {
-                    val plantas = response.body()!!
+                    val plantasBase = response.body()!!
                     
-                    // Convertir PlantResponse a PlantaConDatos directamente (Optimización total)
-                    val listaParaAdapter = plantas.map { plantResponse ->
-                        // Usar los datos que ya vienen en el listado base
-                        val humReal = plantResponse.humedad_actual
-                        val tempReal = plantResponse.temperatura_actual
-                        
-                        // Crear objeto de dominio
-                        val planta = com.example.proyectofinal6to_ecobox.data.model.Planta(
-                            plantResponse.id,
-                            plantResponse.nombre,
-                            plantResponse.especie ?: "",
-                            plantResponse.fecha_plantacion ?: "",
-                            plantResponse.descripcion ?: "",
-                            plantResponse.familia
-                        ).apply {
-                            setFoto(plantResponse.imagen_url ?: "")
-                            setEstado(plantResponse.estado_salud ?: "Normal")
+                    // Obtener sensores igual que la web: directamente por planta
+                    val deferreds = plantasBase.map { p: PlantResponse ->
+                        async {
+                            var hum: Float? = null
+                            var temp: Float? = null
+                            
+                            try {
+                                // Obtener sensores de esta planta
+                                val sensorsResponse = api.getSensors("Token $token", p.id)
+                                if (sensorsResponse.isSuccessful && sensorsResponse.body() != null) {
+                                    val sensores = sensorsResponse.body()!!
+                                    
+                                    // Buscar sensor de humedad (tipo_sensor = 2, igual que la web)
+                                    val sensorHumedad = sensores.find { it.tipoSensor == 2 }
+                                    if (sensorHumedad != null) {
+                                        // Obtener última medición
+                                        val medicionResponse = api.getSensorMeasurements(
+                                            "Token $token", 
+                                            sensorHumedad.id, 
+                                            limit = 1
+                                        )
+                                        if (medicionResponse.isSuccessful && medicionResponse.body() != null) {
+                                            val mediciones = medicionResponse.body()!!
+                                            if (mediciones.isNotEmpty()) {
+                                                hum = mediciones[0].valor
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Buscar sensor de temperatura (tipo_sensor = 1, igual que la web)
+                                    val sensorTemp = sensores.find { it.tipoSensor == 1 }
+                                    if (sensorTemp != null) {
+                                        // Obtener última medición
+                                        val medicionResponse = api.getSensorMeasurements(
+                                            "Token $token", 
+                                            sensorTemp.id, 
+                                            limit = 1
+                                        )
+                                        if (medicionResponse.isSuccessful && medicionResponse.body() != null) {
+                                            val mediciones = medicionResponse.body()!!
+                                            if (mediciones.isNotEmpty()) {
+                                                temp = mediciones[0].valor
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.e("PlantsFragment", "Error obteniendo sensores para planta ${p.id}: ${e.message}")
+                            }
+
+                            PlantaConDatos(
+                                planta = com.example.proyectofinal6to_ecobox.data.model.Planta(
+                                    p.id, p.nombre, p.especie ?: "", p.fecha_plantacion ?: "", 
+                                    p.descripcion ?: "", p.familia
+                                ).apply {
+                                    setFoto(p.imagen_url ?: "")
+                                    setEstado(p.estado_salud ?: "Normal")
+                                },
+                                ubicacion = p.familia_nombre ?: "Mi Jardín",
+                                humedadSuelo = hum,
+                                temperatura = temp,
+                                luz = 0f,
+                                nivelAgua = if (p.necesita_agua == true) 25 else 85,
+                                estado = p.estado_salud ?: "Normal",
+                                ultimoRiego = p.ultima_medicion ?: "Sin datos",
+                                sensorCount = 0,
+                                aspecto = p.aspecto
+                            )
                         }
-                        
-                        PlantaConDatos(
-                            planta = planta,
-                            ubicacion = plantResponse.familia_nombre ?: "Sin ubicación",
-                            humedadSuelo = humReal,
-                            temperatura = tempReal,
-                            luz = 0f,
-                            nivelAgua = if (plantResponse.necesita_agua == true) 25 else 85,
-                            estado = plantResponse.estado_salud ?: "Normal",
-                            ultimoRiego = plantResponse.ultima_medicion ?: "Sin datos",
-                            sensorCount = 0, // No necesitamos el conteo exacto en el listado para ahorrar peticiones
-                            aspecto = plantResponse.aspecto
-                        )
                     }
                     
+                    val listaParaAdapter = deferreds.awaitAll()
                     adapter.updateList(listaParaAdapter)
                 } else {
                     Toast.makeText(requireContext(), "Error cargando plantas", Toast.LENGTH_SHORT).show()
