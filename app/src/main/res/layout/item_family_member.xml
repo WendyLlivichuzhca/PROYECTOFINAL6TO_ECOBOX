@@ -2,6 +2,7 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
@@ -60,10 +61,41 @@
                 android:textSize="12sp"/>
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/layoutAdminActions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <ImageButton
+                android:id="@+id/btnChangeRole"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_settings"
+                app:tint="@color/info_600"
+                android:contentDescription="Cambiar Rol"
+                android:layout_marginEnd="8dp"/>
+
+            <ImageButton
+                android:id="@+id/btnRemoveMember"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_delete"
+                app:tint="@color/error_600"
+                android:contentDescription="Remover Miembro"/>
+
+        </LinearLayout>
+
         <TextView
             android:id="@+id/tvMemberRole"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:text="ADMIN"
             android:textColor="#2D5A40"
             android:textSize="10sp"

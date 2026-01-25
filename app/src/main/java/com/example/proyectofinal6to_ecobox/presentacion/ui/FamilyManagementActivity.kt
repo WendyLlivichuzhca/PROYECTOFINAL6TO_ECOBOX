@@ -31,6 +31,8 @@ class FamilyManagementActivity : AppCompatActivity() {
 
     private var authToken: String? = null
     private var familyId: Long = -1
+    private var iAmAdmin: Boolean = false
+    private var currentUserId: Long = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +40,7 @@ class FamilyManagementActivity : AppCompatActivity() {
 
         val prefs = getSharedPreferences("ecobox_prefs", Context.MODE_PRIVATE)
         authToken = prefs.getString("auth_token", null)
+        currentUserId = prefs.getLong("user_id", -1)
 
         if (authToken == null) {
             Toast.makeText(this, "Error de sesión", Toast.LENGTH_SHORT).show()
@@ -61,13 +64,12 @@ class FamilyManagementActivity : AppCompatActivity() {
         btnCopyCode = findViewById(R.id.btnCopyCode)
         rvMembers = findViewById(R.id.rvMembers)
 
-        adapter = FamilyMembersAdapter(emptyList())
+        setupAdapter(emptyList())
         rvMembers.layoutManager = LinearLayoutManager(this)
-        rvMembers.adapter = adapter
 
         btnCopyCode.setOnClickListener {
             val code = tvInviteCode.text.toString()
-            if (code != "XXXX-XXXX") {
+            if (code != "XXXX-XXXX" && code != "Sin código") {
                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 val clip = ClipData.newPlainText("Código Invitación EcoBox", code)
                 clipboard.setPrimaryClip(clip)
@@ -76,58 +78,82 @@ class FamilyManagementActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupAdapter(members: List<FamilyMemberResponse>) {
+        adapter = FamilyMembersAdapter(
+            members = members,
+            iAmAdmin = iAmAdmin,
+            currentUserId = currentUserId,
+            onChangeRole = { member -> toggleAdmin(member) },
+            onRemoveMember = { member -> confirmRemove(member) }
+        )
+        rvMembers.adapter = adapter
+    }
+
     private fun loadFamilyData() {
-        // Intentar obtener datos del intent primero
         val intentFamilyId = intent.getLongExtra("family_id", -1)
         val intentFamilyName = intent.getStringExtra("family_name")
         val intentFamilyCode = intent.getStringExtra("family_code")
 
-        if (intentFamilyId != -1L && intentFamilyName != null) {
-            // Usar datos del intent (familia seleccionada)
-            familyId = intentFamilyId
-            tvFamilyName.text = intentFamilyName
-            tvInviteCode.text = intentFamilyCode ?: "Sin código"
-            
-            // Cargar miembros de esta familia específica
-            loadMembersForFamily(intentFamilyId)
-        } else {
-            // Fallback: cargar la primera familia disponible
-            lifecycleScope.launch {
-                try {
-                    val response = RetrofitClient.instance.getFamilies("Token $authToken")
-                    if (response.isSuccessful && !response.body().isNullOrEmpty()) {
-                        val family = response.body()!![0]
-                        familyId = family.id
-                        tvFamilyName.text = family.nombre
-                        tvInviteCode.text = family.codigo_invitacion ?: "Sin código"
-                        
-                        family.miembros?.let {
-                            adapter.updateMembers(it)
-                        }
-                    } else {
-                        tvFamilyName.text = "Sin familia activa"
-                        Log.e("FamilyManagement", "Error familias: ${response.code()}")
-                    }
-                } catch (e: Exception) {
-                    Log.e("FamilyManagement", "Error red familias", e)
-                }
-            }
-        }
-    }
-
-    private fun loadMembersForFamily(familyId: Long) {
         lifecycleScope.launch {
             try {
                 val response = RetrofitClient.instance.getFamilies("Token $authToken")
                 if (response.isSuccessful && !response.body().isNullOrEmpty()) {
-                    val familia = response.body()!!.find { it.id == familyId }
-                    familia?.miembros?.let {
-                        adapter.updateMembers(it)
-                        Log.d("FamilyManagement", "✅ ${it.size} miembros cargados para familia $familyId")
+                    val targetFamily = if (intentFamilyId != -1L) {
+                        response.body()!!.find { it.id == intentFamilyId }
+                    } else {
+                        response.body()!![0]
+                    }
+
+                    targetFamily?.let { family ->
+                        familyId = family.id
+                        iAmAdmin = family.es_admin
+                        tvFamilyName.text = family.nombre
+                        tvInviteCode.text = family.codigo_invitacion ?: "Sin código"
+                        
+                        family.miembros?.let {
+                            setupAdapter(it)
+                        }
                     }
                 }
             } catch (e: Exception) {
-                Log.e("FamilyManagement", "Error cargando miembros", e)
+                Log.e("FamilyManagement", "Error red familias", e)
+            }
+        }
+    }
+
+    private fun toggleAdmin(member: FamilyMemberResponse) {
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.toggleMemberAdmin("Token $authToken", familyId, member.id)
+                if (response.isSuccessful) {
+                    Toast.makeText(this@FamilyManagementActivity, "Rol actualizado", Toast.LENGTH_SHORT).show()
+                    loadFamilyData() // Recargar datos
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@FamilyManagementActivity, "Error al cambiar rol", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun confirmRemove(member: FamilyMemberResponse) {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("Remover Miembro")
+            .setMessage("¿Estás seguro de que deseas eliminar a ${member.usuario_info.first_name} de la familia?")
+            .setPositiveButton("Eliminar") { _, _ -> removeMember(member) }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun removeMember(member: FamilyMemberResponse) {
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.removeMember("Token $authToken", familyId, member.id)
+                if (response.isSuccessful) {
+                    Toast.makeText(this@FamilyManagementActivity, "Miembro eliminado", Toast.LENGTH_SHORT).show()
+                    loadFamilyData() // Recargar datos
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@FamilyManagementActivity, "Error al eliminar miembro", Toast.LENGTH_SHORT).show()
             }
         }
     }

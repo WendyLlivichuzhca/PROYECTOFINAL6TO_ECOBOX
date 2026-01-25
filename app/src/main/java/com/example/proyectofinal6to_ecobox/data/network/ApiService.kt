@@ -58,6 +58,26 @@ interface ApiService {
         @Body request: Map<String, String>
     ): Response<FamilyResponse>
 
+    @POST("familias/unirse/")
+    suspend fun joinFamily(
+        @Header("Authorization") token: String,
+        @Body request: Map<String, String>
+    ): Response<MessageResponse>
+
+    @DELETE("familias/{family_id}/miembros/{member_id}/")
+    suspend fun removeMember(
+        @Header("Authorization") token: String,
+        @Path("family_id") familyId: Long,
+        @Path("member_id") memberId: Long
+    ): Response<MessageResponse>
+
+    @POST("familias/{family_id}/miembros/{member_id}/toggle_admin/")
+    suspend fun toggleMemberAdmin(
+        @Header("Authorization") token: String,
+        @Path("family_id") familyId: Long,
+        @Path("member_id") memberId: Long
+    ): Response<MessageResponse>
+
     // --- PLANTAS ---
     @GET("plantas/")
     suspend fun getPlants(@Header("Authorization") token: String): Response<List<PlantResponse>>

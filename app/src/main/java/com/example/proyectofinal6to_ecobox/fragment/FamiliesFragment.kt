@@ -65,21 +65,105 @@ class FamiliesFragment : Fragment(R.layout.fragment_families) {
 
         rvFamilies.adapter = adapter
 
-        // Configurar botones (deshabilitados por ahora, solo mostrar familias)
-        view.findViewById<MaterialButton>(R.id.btnJoinFamily).apply {
-            isEnabled = false
-            alpha = 0.5f
+        // Configurar botones
+        view.findViewById<MaterialButton>(R.id.btnJoinFamily).setOnClickListener {
+            showJoinFamilyDialog()
         }
 
-        view.findViewById<MaterialButton>(R.id.btnCreateFamily).apply {
-            isEnabled = false
-            alpha = 0.5f
+        view.findViewById<MaterialButton>(R.id.btnCreateFamily).setOnClickListener {
+            showCreateFamilyDialog()
         }
 
-        fabAddQuick.isVisible = false
+        view.findViewById<MaterialButton>(R.id.btnCreateFirst)?.setOnClickListener {
+            showCreateFamilyDialog()
+        }
+
+        fabAddQuick.setOnClickListener {
+            showCreateFamilyDialog()
+        }
 
         // Cargar familias desde la API
         cargarFamiliasDesdeAPI()
+    }
+
+    private fun showJoinFamilyDialog() {
+        val builder = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+        val inflater = layoutInflater
+        val dialogView = inflater.inflate(R.layout.dialog_join_family, null)
+        val etCode = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etFamilyCode)
+
+        builder.setView(dialogView)
+            .setTitle("Unirse a una Familia")
+            .setPositiveButton("Unirse") { dialog, _ ->
+                val code = etCode.text.toString().trim()
+                if (code.isNotEmpty()) {
+                    joinFamily(code)
+                } else {
+                    Toast.makeText(requireContext(), "Ingresa un código", Toast.LENGTH_SHORT).show()
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar") { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    private fun showCreateFamilyDialog() {
+        val builder = com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+        val inflater = layoutInflater
+        val dialogView = inflater.inflate(R.layout.dialog_create_family, null)
+        val etName = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etFamilyName)
+
+        builder.setView(dialogView)
+            .setTitle("Crear Nueva Familia")
+            .setPositiveButton("Crear") { dialog, _ ->
+                val name = etName.text.toString().trim()
+                if (name.isNotEmpty()) {
+                    createFamily(name)
+                } else {
+                    Toast.makeText(requireContext(), "Ingresa un nombre", Toast.LENGTH_SHORT).show()
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancelar") { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    private fun joinFamily(code: String) {
+        mostrarLoading(true)
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.joinFamily("Token $authToken", mapOf("codigo" to code))
+                if (response.isSuccessful) {
+                    Toast.makeText(requireContext(), "Te has unido a la familia", Toast.LENGTH_SHORT).show()
+                    cargarFamiliasDesdeAPI()
+                } else {
+                    Toast.makeText(requireContext(), "Código inválido o familia no encontrada", Toast.LENGTH_SHORT).show()
+                    mostrarLoading(false)
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error de red", Toast.LENGTH_SHORT).show()
+                mostrarLoading(false)
+            }
+        }
+    }
+
+    private fun createFamily(name: String) {
+        mostrarLoading(true)
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.createFamily("Token $authToken", mapOf("nombre" to name))
+                if (response.isSuccessful) {
+                    Toast.makeText(requireContext(), "Familia '${name}' creada", Toast.LENGTH_SHORT).show()
+                    cargarFamiliasDesdeAPI()
+                } else {
+                    Toast.makeText(requireContext(), "Error al crear familia", Toast.LENGTH_SHORT).show()
+                    mostrarLoading(false)
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error de red", Toast.LENGTH_SHORT).show()
+                mostrarLoading(false)
+            }
+        }
     }
 
     private fun cargarFamiliasDesdeAPI() {
