@@ -1,6 +1,7 @@
 package com.example.proyectofinal6to_ecobox.presentacion.ui
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -12,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.data.model.Recommendation
+import androidx.lifecycle.lifecycleScope
 import com.example.proyectofinal6to_ecobox.presentacion.adapter.RecommendationsAdapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -57,44 +59,42 @@ class RecommendationsActivity : AppCompatActivity() {
 
     private fun loadRecommendations() {
         val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
-        val userId = prefs.getLong("user_id", -1)
+        val token = prefs.getString("auth_token", null)
 
-        CoroutineScope(Dispatchers.IO).launch {
-            // Simulamos la obtención de recomendaciones desde el motor de IA
-            // En una implementación real, esto llamaría a un servicio que analice sensores
-            val recommendations = getMockRecommendations() 
+        if (token == null) return
 
-            withContext(Dispatchers.Main) {
-                if (recommendations.isEmpty()) {
-                    emptyState.visibility = View.VISIBLE
-                    rvRecommendations.visibility = View.GONE
-                    tvAiSummary.text = "Todo parece estar en orden en tu jardín."
-                } else {
-                    emptyState.visibility = View.GONE
-                    rvRecommendations.visibility = View.VISIBLE
-                    adapter.updateItems(recommendations)
+        lifecycleScope.launch {
+            try {
+                val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance.getRecommendations("Token $token")
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val recommendations = response.body()!!
                     
-                    val urgentes = recommendations.count { it.type == "URGENTE" }
-                    tvAiSummary.text = if (urgentes > 0) {
-                        "Atención: Tienes $urgentes acciones críticas pendientes."
+                    if (recommendations.isEmpty()) {
+                        emptyState.visibility = View.VISIBLE
+                        rvRecommendations.visibility = View.GONE
+                        tvAiSummary.text = "Todo parece estar en orden en tu jardín."
                     } else {
-                        "Tu jardín está sano. Mira estas sugerencias preventivas."
+                        emptyState.visibility = View.GONE
+                        rvRecommendations.visibility = View.VISIBLE
+                        adapter.updateItems(recommendations)
+                        
+                        val urgentes = recommendations.count { it.type == "URGENTE" }
+                        tvAiSummary.text = if (urgentes > 0) {
+                            "Atención: Tienes $urgentes acciones críticas pendientes."
+                        } else {
+                            "Tu jardín está sano. Mira estas sugerencias preventivas."
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                Log.e("Recommendations", "Error red recomendaciones", e)
+                Toast.makeText(this@RecommendationsActivity, "Error al cargar recomendaciones reales", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun getMockRecommendations(): List<Recommendation> {
-        return listOf(
-            Recommendation(1, "URGENTE", 1, "Suculenta Mía", "Humedad crítica (18%) detectada en Maceta 1", "2 horas", "regar", 0.96f),
-            Recommendation(2, "ADVERTENCIA", 3, "Orquídea Blanca", "Temperatura descendiendo (14°C). Riesgo de helada.", "5 horas", "mover", 0.88f),
-            Recommendation(3, "INFO", 5, "Tomatera", "Es un buen momento para podar las hojas bajas.", "Ayer", "podar", 0.75f)
-        )
-    }
-
-    private fun handleRecommendationClick(rec: Recommendation) {
+    private fun handleRecommendationClick(rec: com.example.proyectofinal6to_ecobox.data.network.RecommendationResponse) {
         Toast.makeText(this, "Acción sugerida: ${rec.action.uppercase()}", Toast.LENGTH_SHORT).show()
-        // Aquí se podría navegar al detalle de la planta o disparar la acción
     }
 }

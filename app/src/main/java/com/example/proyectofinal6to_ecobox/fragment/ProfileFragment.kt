@@ -12,7 +12,11 @@ import androidx.fragment.app.Fragment
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.UsuarioDao
 import com.example.proyectofinal6to_ecobox.presentacion.ui.LoginActivity
-import kotlin.concurrent.thread
+import com.example.proyectofinal6to_ecobox.presentacion.ui.FamilyManagementActivity
+import com.example.proyectofinal6to_ecobox.presentacion.ui.ProfileEditActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import android.util.Log
 
 class ProfileFragment : Fragment() {
 
@@ -27,12 +31,12 @@ class ProfileFragment : Fragment() {
         inicializarComponentesUI(view)
 
         if (idUsuario != -1L) {
-            cargarDatosDesdeBD(view)
+            cargarDatosDesdeApi(view)
         }
 
         // Configurar Botones Principales
         view.findViewById<View>(R.id.btnActionEditProfile).setOnClickListener {
-            mostrarDialogoEdicion(view)
+            startActivity(Intent(activity, ProfileEditActivity::class.java))
         }
 
         view.findViewById<View>(R.id.btnActionLogout).setOnClickListener {
@@ -79,56 +83,72 @@ class ProfileFragment : Fragment() {
         view.findViewById<TextView>(R.id.tvSwitchLabel).text = label
     }
 
-    private fun cargarDatosDesdeBD(root: View) {
-        thread {
-            val d = UsuarioDao.obtenerPerfilCompleto(idUsuario)
-            activity?.runOnUiThread {
-                if (d.isNotEmpty()) {
-                    root.findViewById<TextView>(R.id.tvProfileNameDisplay).text = "${d["nombre"]} ${d["apellido"]}"
-                    root.findViewById<TextView>(R.id.tvAvatarInitials).text = d["nombre"]?.take(1)?.uppercase()
-                    root.findViewById<TextView>(R.id.tvUserRole).text = d["rol"] ?: "Usuario"
-                    
-                    // Acceder a views dentro de includes
-                    root.findViewById<View>(R.id.itemEmail).findViewById<TextView>(R.id.tvInfoValue).text = d["email"]
-                    root.findViewById<View>(R.id.itemPhone).findViewById<TextView>(R.id.tvInfoValue).text = d["telefono"] ?: "No registrado"
-                    
-                    val familyInfo = root.findViewById<View>(R.id.itemFamily)
-                    familyInfo.findViewById<TextView>(R.id.tvInfoValue).text = d["familia"] ?: "Sin asignar"
-                    if (d["familia"] != null) {
-                        val subValue = familyInfo.findViewById<TextView>(R.id.tvInfoSubValue)
-                        subValue.text = "Rol: Miembro"
-                        subValue.visibility = View.VISIBLE
-                    }
+    private fun cargarDatosDesdeApi(root: View) {
+        val prefs = requireActivity().getSharedPreferences("ecobox_prefs", Context.MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null)
 
-                    // Estadísticas dentro de includes
-                    root.findViewById<View>(R.id.statPlantas).findViewById<TextView>(R.id.tvStatValue).text = d["plantas"] ?: "0"
-                    root.findViewById<View>(R.id.statSensores).findViewById<TextView>(R.id.tvStatValue).text = d["sensores"] ?: "0"
-                    root.findViewById<View>(R.id.statFamilias).findViewById<TextView>(R.id.tvStatValue).text = d["familias"] ?: "0"
-                    root.findViewById<View>(R.id.statIA).findViewById<TextView>(R.id.tvStatValue).text = d["ia"] ?: "0"
+        if (token == null) return
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                // Cargar datos del perfil
+                val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance.getUserProfile("Token $token")
+                if (response.isSuccessful && response.body() != null) {
+                    val d = response.body()!!
+                    root.findViewById<TextView>(R.id.tvProfileNameDisplay).text = "${d.nombre ?: ""} ${d.apellido ?: ""}".trim()
+                    root.findViewById<TextView>(R.id.tvAvatarInitials).text = d.nombre?.take(1)?.uppercase() ?: "U"
+                    
+                    // Información de cuenta
+                    root.findViewById<View>(R.id.itemEmail).findViewById<TextView>(R.id.tvInfoValue).text = d.email
+                    root.findViewById<View>(R.id.itemPhone).findViewById<TextView>(R.id.tvInfoValue).text = 
+                        d.telefono?.takeIf { it.isNotEmpty() } ?: "No registrado"
+                    
+                    // Cargar estadísticas REALES desde familias
+                    cargarEstadisticasReales(root, token)
                 }
+            } catch (e: Exception) {
+                Log.e("ProfileFragment", "Error red perfil", e)
             }
         }
     }
 
-    private fun mostrarDialogoEdicion(root: View) {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_edit_profile, null)
-        val etNom = dialogView.findViewById<EditText>(R.id.etEditName)
-        val etApe = dialogView.findViewById<EditText>(R.id.etEditLastName)
-
-        AlertDialog.Builder(requireContext())
-            .setTitle("Editar Perfil")
-            .setView(dialogView)
-            .setPositiveButton("Guardar") { _, _ ->
-                thread {
-                    val exito = UsuarioDao.actualizarUsuario(idUsuario, etNom.text.toString(), etApe.text.toString())
-                    activity?.runOnUiThread {
-                        if (exito) {
-                            Toast.makeText(context, "Actualizado", Toast.LENGTH_SHORT).show()
-                            cargarDatosDesdeBD(root)
-                        }
-                    }
+    private fun cargarEstadisticasReales(root: View, token: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance.getFamilies("Token $token")
+                
+                if (response.isSuccessful && !response.body().isNullOrEmpty()) {
+                    val familias = response.body()!!
+                    
+                    // Calcular estadísticas agregadas
+                    val totalFamilias = familias.size
+                    val totalPlantas = familias.sumOf { it.cantidad_plantas }
+                    val totalMiembros = familias.sumOf { it.cantidad_miembros }
+                    
+                    // Actualizar UI con estadísticas reales
+                    root.findViewById<View>(R.id.statPlantas).findViewById<TextView>(R.id.tvStatValue).text = totalPlantas.toString()
+                    root.findViewById<View>(R.id.statSensores).findViewById<TextView>(R.id.tvStatValue).text = "0" // No hay endpoint para sensores
+                    root.findViewById<View>(R.id.statFamilias).findViewById<TextView>(R.id.tvStatValue).text = totalFamilias.toString()
+                    root.findViewById<View>(R.id.statIA).findViewById<TextView>(R.id.tvStatValue).text = "0" // No hay endpoint para consultas IA
+                    
+                    // Actualizar campo de familia con la primera familia (principal)
+                    val familiaPrincipal = familias.firstOrNull { it.es_admin } ?: familias.firstOrNull()
+                    root.findViewById<View>(R.id.itemFamily).findViewById<TextView>(R.id.tvInfoValue).text = 
+                        familiaPrincipal?.nombre ?: "Sin familia"
+                    
+                    Log.d("ProfileFragment", "✅ Estadísticas: $totalFamilias familias, $totalPlantas plantas, $totalMiembros miembros")
+                } else {
+                    // Si no hay familias, mostrar 0
+                    root.findViewById<View>(R.id.statPlantas).findViewById<TextView>(R.id.tvStatValue).text = "0"
+                    root.findViewById<View>(R.id.statSensores).findViewById<TextView>(R.id.tvStatValue).text = "0"
+                    root.findViewById<View>(R.id.statFamilias).findViewById<TextView>(R.id.tvStatValue).text = "0"
+                    root.findViewById<View>(R.id.statIA).findViewById<TextView>(R.id.tvStatValue).text = "0"
+                    root.findViewById<View>(R.id.itemFamily).findViewById<TextView>(R.id.tvInfoValue).text = "Sin familia"
                 }
-            }.show()
+            } catch (e: Exception) {
+                Log.e("ProfileFragment", "Error cargando estadísticas", e)
+            }
+        }
     }
 
     private fun cerrarSesion(prefs: android.content.SharedPreferences) {

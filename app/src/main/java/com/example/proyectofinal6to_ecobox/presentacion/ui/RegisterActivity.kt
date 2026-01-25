@@ -13,6 +13,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.UsuarioDao
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import android.util.Log
 import java.util.Calendar
 
 class RegisterActivity : AppCompatActivity() {
@@ -166,25 +169,44 @@ class RegisterActivity : AppCompatActivity() {
             return
         }
 
-        // --- 3. GUARDAR EN BD ---
+        // --- 3. GUARDAR A TRAVÉS DE LA API (REST) ---
         btnRegister.isEnabled = false // Evitar doble clic
-        Toast.makeText(this, "Creando cuenta...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Procesando registro...", Toast.LENGTH_SHORT).show()
 
-        Thread {
-            // Llamamos a tu DAO
-            val exito = UsuarioDao.crearUsuario(
-                nombre, apellido, email, username, telefono, fechaNacimiento, pass
-            )
+        val requestData = mapOf(
+            "nombre" to nombre,
+            "apellido" to apellido,
+            "email" to email,
+            "username" to username,
+            "telefono" to telefono,
+            "password" to pass
+        )
 
-            runOnUiThread {
-                btnRegister.isEnabled = true
-                if (exito) {
-                    Toast.makeText(this, "¡Bienvenido! Cuenta creada.", Toast.LENGTH_LONG).show()
-                    finish() // Cierra registro y vuelve al login
+        lifecycleScope.launch {
+            try {
+                val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance.register(requestData)
+                
+                if (response.isSuccessful && response.body() != null) {
+                    Toast.makeText(this@RegisterActivity, "¡Cuenta creada exitosamente!", Toast.LENGTH_LONG).show()
+                    finish() // Vuelve al login
                 } else {
-                    Toast.makeText(this, "Error: Usuario o Email ya registrados", Toast.LENGTH_LONG).show()
+                    val errorBody = response.errorBody()?.string()
+                    Log.e("RegisterActivity", "Error reg: $errorBody")
+                    
+                    if (errorBody?.contains("usuario con este email") == true) {
+                        etRegEmail.error = "El email ya está registrado"
+                    } else if (errorBody?.contains("nombre de usuario") == true) {
+                        etRegUsername.error = "El username ya está en uso"
+                    } else {
+                        Toast.makeText(this@RegisterActivity, "Error al registrar: Verifica los datos", Toast.LENGTH_LONG).show()
+                    }
+                    btnRegister.isEnabled = true
                 }
+            } catch (e: Exception) {
+                Log.e("RegisterActivity", "Error de red", e)
+                Toast.makeText(this@RegisterActivity, "No hay conexión con el servidor", Toast.LENGTH_LONG).show()
+                btnRegister.isEnabled = true
             }
-        }.start()
+        }
     }
 }

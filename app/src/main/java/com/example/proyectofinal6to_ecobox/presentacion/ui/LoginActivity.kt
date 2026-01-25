@@ -21,6 +21,8 @@ import androidx.core.content.ContextCompat
 import com.airbnb.lottie.LottieAnimationView
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.UsuarioDao
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
@@ -111,7 +113,7 @@ class LoginActivity : AppCompatActivity() {
         // ---------------------------------------
 
         // Acción Principal
-        btnLogin.setOnClickListener { attemptLogin() }
+        btnLogin.setOnClickListener { attemptLoginRest() }
 
         // Validaciones en tiempo real
         setupFieldListener(etLoginEmail) { text ->
@@ -122,20 +124,18 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    // --- NUEVO: Lógica visual del Checkbox ---
+    // --- Lógica visual del Checkbox ---
     private fun updateRememberMeUI() {
         if (isRememberMeChecked) {
             ivRememberCheck.setImageResource(R.drawable.ic_check_circle)
-            // Usa tu color verde (eco_primary o #2D5A40)
             ivRememberCheck.setColorFilter(ContextCompat.getColor(this, R.color.eco_primary))
         } else {
             ivRememberCheck.setImageResource(R.drawable.ic_circle_outline)
-            // Usa color gris (gray_text o #A0A0A0)
             ivRememberCheck.setColorFilter(ContextCompat.getColor(this, R.color.gray_text))
         }
     }
 
-    // --- NUEVO: Verificar sesión al inicio ---
+    // --- Verificar sesión al inicio ---
     private fun checkExistingSession(): Boolean {
         val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
         val isLoggedIn = prefs.getBoolean("is_logged_in", false)
@@ -147,7 +147,6 @@ class LoginActivity : AppCompatActivity() {
         }
         return false
     }
-    // -----------------------------------------
 
     private fun togglePasswordVisibility() {
         isPasswordVisible = !isPasswordVisible
@@ -161,76 +160,76 @@ class LoginActivity : AppCompatActivity() {
         etLoginPass.setSelection(etLoginPass.text.length)
     }
 
-    private fun attemptLogin() {
+    private fun attemptLoginRest() {
         val email = etLoginEmail.text.toString().trim()
         val pass = etLoginPass.text.toString().trim()
 
         if (!validateInputs(email, pass)) return
 
-        Toast.makeText(this, "Verificando...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Autenticando...", Toast.LENGTH_SHORT).show()
         btnLogin.isEnabled = false
 
-        Thread {
-            val codigoResultado = UsuarioDao.validarUsuario(email, pass)
+        val requestData = mapOf(
+            "email" to email,
+            "password" to pass
+        )
 
-            var userId: Long = -1
-            if (codigoResultado == UsuarioDao.LOGIN_EXITOSO) {
-                userId = UsuarioDao.obtenerIdPorEmail(email)
-            }
-
-            runOnUiThread {
-                handleLoginResult(codigoResultado, userId, email)
+        // Usamos Coroutines para llamar a la API
+        lifecycleScope.launch {
+            try {
+                val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance.login(requestData)
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val authResponse = response.body()!!
+                    val user = authResponse.user
+                    
+                    if (user != null && authResponse.token != null) {
+                        Toast.makeText(this@LoginActivity, authResponse.message, Toast.LENGTH_SHORT).show()
+                        saveSessionAndNavigateRest(user, authResponse.token)
+                    } else {
+                        Toast.makeText(this@LoginActivity, "Error: Datos de usuario incompletos", Toast.LENGTH_LONG).show()
+                        btnLogin.isEnabled = true
+                    }
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    Log.e("LoginActivity", "Error login: $errorBody")
+                    
+                    // Manejo de errores específicos del backend
+                    if (errorBody?.contains("No se encontró") == true) {
+                        etLoginEmail.error = "Correo no registrado"
+                    } else if (errorBody?.contains("incorrecta") == true) {
+                        etLoginPass.error = "Contraseña incorrecta"
+                    } else {
+                        Toast.makeText(this@LoginActivity, "Credenciales inválidas", Toast.LENGTH_SHORT).show()
+                    }
+                    btnLogin.isEnabled = true
+                }
+            } catch (e: Exception) {
+                Log.e("LoginActivity", "Error de red", e)
+                Toast.makeText(this@LoginActivity, "Error de conexión con el servidor", Toast.LENGTH_LONG).show()
                 btnLogin.isEnabled = true
             }
-        }.start()
-    }
-
-    private fun handleLoginResult(codigo: Int, userId: Long, email: String) {
-        when (codigo) {
-            UsuarioDao.LOGIN_EXITOSO -> {
-                etLoginEmail.error = null
-                etLoginPass.error = null
-                Toast.makeText(this, "¡Bienvenido!", Toast.LENGTH_SHORT).show()
-                saveSessionAndNavigate(userId, email)
-            }
-            UsuarioDao.EMAIL_NO_ENCONTRADO -> {
-                etLoginEmail.error = "Correo no registrado"
-                etLoginEmail.requestFocus()
-            }
-            UsuarioDao.PASSWORD_INCORRECTO -> {
-                etLoginPass.setText("")
-                etLoginPass.error = "Contraseña incorrecta"
-                etLoginPass.requestFocus()
-            }
-            else -> Toast.makeText(this, "Error de conexión", Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun saveSessionAndNavigate(userId: Long, email: String) {
+    private fun saveSessionAndNavigateRest(user: com.example.proyectofinal6to_ecobox.data.network.UserData, token: String) {
         val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
         val editor = prefs.edit()
 
-        editor.putLong("user_id", userId)
-        editor.putString("user_email", email)
+        editor.putLong("user_id", user.id)
+        editor.putString("user_email", user.email)
+        editor.putString("user_name", user.first_name)
+        editor.putString("auth_token", token)
 
-        // --- NUEVO: Obtener y guardar el token de Django ---
-        val token = UsuarioDao.obtenerTokenPorUsuario(userId)
-        if (token != null) {
-            editor.putString("auth_token", token)
-            Log.d("LoginActivity", "Token guardado en SharedPreferences: Token $token")
-        } else {
-            Log.w("LoginActivity", "No se encontró token para el usuario $userId")
-        }
-
-        // --- NUEVO: Guardar bandera solo si el usuario quiso ---
         if (isRememberMeChecked) {
             editor.putBoolean("is_logged_in", true)
         } else {
-            // Aseguramos que sea false si no marcó la casilla
             editor.putBoolean("is_logged_in", false)
         }
 
         editor.apply()
+        
+        Log.d("LoginActivity", "Sesión guardada - Token: Token $token")
 
         startActivity(Intent(this, MainActivity::class.java))
         finish()

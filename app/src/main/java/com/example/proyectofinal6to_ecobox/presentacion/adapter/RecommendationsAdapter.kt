@@ -9,12 +9,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.model.Recommendation
+import com.example.proyectofinal6to_ecobox.data.network.RecommendationResponse
 import com.google.android.material.card.MaterialCardView
 
 class RecommendationsAdapter(
-    private var items: List<Recommendation>,
-    private val onItemClick: (Recommendation) -> Unit
+    private var items: List<RecommendationResponse>,
+    private val onItemClick: (RecommendationResponse) -> Unit
 ) : RecyclerView.Adapter<RecommendationsAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -35,7 +35,7 @@ class RecommendationsAdapter(
         val item = items[position]
         holder.tvType.text = item.type
         holder.tvMessage.text = item.message
-        holder.tvTime.text = item.timeAgo
+        holder.tvTime.text = item.time_ago
 
         // Personalización según el tipo (Estilo Web Premium)
         when (item.type) {
@@ -64,7 +64,7 @@ class RecommendationsAdapter(
 
     override fun getItemCount() = items.size
 
-    fun updateItems(newItems: List<Recommendation>) {
+    fun updateItems(newItems: List<RecommendationResponse>) {
         items = newItems
         notifyDataSetChanged()
     }

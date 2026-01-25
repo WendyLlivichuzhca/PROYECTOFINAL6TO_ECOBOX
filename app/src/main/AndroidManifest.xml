@@ -112,6 +112,8 @@
         <activity android:name=".presentacion.ui.EditarPlantaActivity" />
         <activity android:name=".presentacion.ui.PlantConfigActivity" />
         <activity android:name=".presentacion.ui.RecommendationsActivity" />
+        <activity android:name=".presentacion.ui.FamilyManagementActivity" />
+        <activity android:name=".presentacion.ui.ProfileEditActivity" />
 
         <receiver
             android:name=".data.worker.EcoBoxBootReceiver"
