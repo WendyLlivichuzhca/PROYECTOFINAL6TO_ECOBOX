@@ -101,6 +101,7 @@
             android:exported="false" />
 
         <activity android:name=".presentacion.ui.AlertsActivity" />
+        <activity android:name=".presentacion.ui.AIControlActivity" />
         <activity android:name=".presentacion.ui.AgregarSensorActivity" />
         <activity android:name=".presentacion.ui.HistorialSeguimientoActivity" />
         <activity android:name=".presentacion.ui.AgregarSeguimientoActivity" />

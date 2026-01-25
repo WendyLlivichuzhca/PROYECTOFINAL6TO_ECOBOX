@@ -277,6 +277,21 @@
                         android:text="Hoy el clima será caluroso. Considera regar tus plantas en la tarde para evitar la evaporación rápida."
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnManageAi"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:layout_gravity="end"
+                        android:text="Configurar IA"
+                        android:textSize="12sp"
+                        android:textAllCaps="false"
+                        app:icon="@drawable/ic_settings"
+                        app:iconSize="16dp"
+                        android:textColor="#6D28D9"
+                        app:iconTint="#6D28D9"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

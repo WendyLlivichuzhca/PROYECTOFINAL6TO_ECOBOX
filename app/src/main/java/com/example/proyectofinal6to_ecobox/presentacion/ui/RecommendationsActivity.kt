@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
 import androidx.lifecycle.lifecycleScope
+import com.example.proyectofinal6to_ecobox.data.network.RetrofitClient
 import com.example.proyectofinal6to_ecobox.presentacion.adapter.RecommendationsAdapter
 import kotlinx.coroutines.launch
 
@@ -91,6 +92,34 @@ class RecommendationsActivity : AppCompatActivity() {
     }
 
     private fun handleRecommendationClick(rec: com.example.proyectofinal6to_ecobox.data.network.RecommendationResponse) {
-        Toast.makeText(this, "Acción sugerida: ${rec.action.uppercase()}", Toast.LENGTH_SHORT).show()
+        // En lugar de un Toast, mostrar opciones de Feedback como en la Web
+        val options = arrayOf("Fue acertada ✅", "Fue errónea ❌", "Ejecutar acción 🚀")
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Retroalimentación IA")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> provideFeedback(rec.id, "correct")
+                    1 -> provideFeedback(rec.id, "incorrect")
+                    2 -> executeSuggestedAction(rec)
+                }
+            }
+            .show()
+    }
+
+    private fun provideFeedback(id: Long, feedback: String) {
+        val token = getSharedPreferences("ecobox_prefs", MODE_PRIVATE).getString("auth_token", "") ?: ""
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.provideAiFeedback("Token $token", id, mapOf("feedback" to feedback))
+                if (response.isSuccessful) {
+                    Toast.makeText(this@RecommendationsActivity, "¡Gracias! Tu feedback ayuda a mejorar la IA", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {}
+        }
+    }
+
+    private fun executeSuggestedAction(rec: com.example.proyectofinal6to_ecobox.data.network.RecommendationResponse) {
+        // Lógica para ejecutar el riego si la acción es de riego
+        Toast.makeText(this, "Ejecutando: ${rec.action}", Toast.LENGTH_SHORT).show()
     }
 }

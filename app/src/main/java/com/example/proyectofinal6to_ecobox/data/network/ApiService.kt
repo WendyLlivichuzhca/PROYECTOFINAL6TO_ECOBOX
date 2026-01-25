@@ -24,6 +24,43 @@ interface ApiService {
         @Body request: Map<String, String>
     ): Response<MessageResponse>
 
+    // --- IA & CONTROL GLOBAL ---
+    @GET("ai/status/")
+    suspend fun getAiStatus(@Header("Authorization") token: String): Response<AiStatusResponse>
+
+    @POST("ai/control/")
+    suspend fun controlAi(
+        @Header("Authorization") token: String,
+        @Body request: Map<String, String> // {"action": "start" | "stop" | "train_all"}
+    ): Response<MessageResponse>
+
+    @GET("ai/watering/predict/{plant_id}/")
+    suspend fun getWateringPrediction(
+        @Header("Authorization") token: String,
+        @Path("plant_id") plantId: Long
+    ): Response<WateringPredictionResponse>
+
+    @GET("ai/watering/history/{plant_id}/")
+    suspend fun getWateringHistory(
+        @Header("Authorization") token: String,
+        @Path("plant_id") plantId: Long
+    ): Response<WateringHistoryResponse>
+
+    @POST("ai/watering/activate/{plant_id}/")
+    suspend fun activateWatering(
+        @Header("Authorization") token: String,
+        @Path("plant_id") plantId: Long,
+        @Body request: Map<String, @JvmSuppressWildcards Any>
+    ): Response<IrrigateResponse>
+
+    // --- RECOMENDACIONES FEEDBACK ---
+    @POST("ai/recommendations/{id}/feedback/")
+    suspend fun provideAiFeedback(
+        @Header("Authorization") token: String,
+        @Path("id") predictionId: Long,
+        @Body request: Map<String, String> // {"feedback": "correct" | "incorrect"}
+    ): Response<MessageResponse>
+
     // --- PERFIL ---
     @GET("auth/profile/")
     suspend fun getUserProfile(@Header("Authorization") token: String): Response<UserProfileResponse>
@@ -504,5 +541,56 @@ data class UserNotificationResponse(
     val tipo: String,
     val usuario: Long
 )
+data class WateringHistoryResponse(
+    val success: Boolean,
+    val waterings: List<WateringHistoryItem>
+)
 
+data class WateringHistoryItem(
+    val id: Long,
+    val date: String,
+    val status: String,
+    val duration: Int,
+    @SerializedName("initial_humidity")
+    val initialHumidity: Float?,
+    @SerializedName("final_humidity")
+    val finalHumidity: Float?,
+    val mode: String,
+    val confidence: Float?
+)
 
+data class WateringPredictionResponse(
+    val success: Boolean,
+    val prediction: WateringPredictionData?,
+    val message: String?
+)
+
+data class WateringPredictionData(
+    val action: String,
+    val confidence: Float,
+    val reason: String,
+    @SerializedName("current_humidity")
+    val currentHumidity: Float,
+    @SerializedName("duration_seconds")
+    val durationSeconds: Int,
+    val timestamp: String
+)
+
+data class AiStatusResponse(
+    val status: String,
+    @SerializedName("ai_version")
+    val aiVersion: String?,
+    @SerializedName("modelos_entrenados")
+    val modelosEntrenados: String, // Corregido: Es un String, no una lista
+    @SerializedName("modelos_activos")
+    val modelosActivos: Int,
+    @SerializedName("total_plantas")
+    val totalPlantas: Int,
+    @SerializedName("monitoreo_activo")
+    val monitoreoActivo: Boolean? = null,
+    @SerializedName("scheduler_activo")
+    val schedulerActivo: Boolean? = null,
+    @SerializedName("plantas_con_modelo")
+    val plantasConModelo: Int? = null,
+    val sistema: Map<String, Any>? = null
+)

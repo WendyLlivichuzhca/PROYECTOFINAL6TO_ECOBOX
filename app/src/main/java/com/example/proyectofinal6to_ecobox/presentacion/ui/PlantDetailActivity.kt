@@ -1,7 +1,9 @@
 package com.example.proyectofinal6to_ecobox.presentacion.ui
 
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
@@ -55,8 +57,6 @@ class PlantDetailActivity : AppCompatActivity() {
     private lateinit var progressWater: ProgressBar
 
     // Controles
-    private lateinit var switchWaterAuto: MaterialSwitch
-    private lateinit var switchLightAuto: MaterialSwitch
     private lateinit var btnWaterNow: MaterialButton
     private lateinit var btnSeguimiento: MaterialButton
     private lateinit var btnEdit: MaterialButton
@@ -99,6 +99,19 @@ class PlantDetailActivity : AppCompatActivity() {
     private lateinit var btnGestionarSensores: MaterialButton
     private var isAdmin: Boolean = false
 
+    // Modos de Riego (Vistas del ToggleGroup)
+    private lateinit var modeToggleGroup: com.google.android.material.button.MaterialButtonToggleGroup
+    private lateinit var layoutManualMode: android.widget.LinearLayout
+    private lateinit var layoutAssistedMode: android.widget.LinearLayout
+    private lateinit var layoutAutoMode: android.widget.LinearLayout
+    private lateinit var tvAIPredictionDetail: TextView
+    private lateinit var tvAIConfidenceDetail: TextView
+    private lateinit var btnAcceptAI: MaterialButton
+    private lateinit var aiStatusLight: View
+    private lateinit var switchAutoIrrigate: MaterialSwitch
+    private lateinit var listWateringHistory: android.widget.LinearLayout
+    private lateinit var tvNoWateringHistory: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_plant_detail)
@@ -140,8 +153,6 @@ class PlantDetailActivity : AppCompatActivity() {
         tvWaterLevelPercent = findViewById(R.id.tvWaterLevelPercent)
         progressWater = findViewById(R.id.progressWater)
 
-        switchWaterAuto = findViewById(R.id.switchWaterAuto)
-        switchLightAuto = findViewById(R.id.switchLightAuto)
         btnWaterNow = findViewById(R.id.btnWaterNow)
         btnSeguimiento = findViewById(R.id.btnSeguimiento)
         btnEdit = findViewById(R.id.btnEdit)
@@ -173,6 +184,19 @@ class PlantDetailActivity : AppCompatActivity() {
         tvDetailDate = findViewById(R.id.tvDetailDate)
         tvDetailSensors = findViewById(R.id.tvDetailSensors)
         tvDetailFamily = findViewById(R.id.tvDetailFamily)
+
+        // Inicializar nuevas vistas de control
+        modeToggleGroup = findViewById(R.id.modeToggleGroup)
+        layoutManualMode = findViewById(R.id.layoutManualMode)
+        layoutAssistedMode = findViewById(R.id.layoutAssistedMode)
+        layoutAutoMode = findViewById(R.id.layoutAutoMode)
+        tvAIPredictionDetail = findViewById(R.id.tvAIPredictionDetail)
+        tvAIConfidenceDetail = findViewById(R.id.tvAIConfidenceDetail)
+        btnAcceptAI = findViewById(R.id.btnAcceptAI)
+        aiStatusLight = findViewById(R.id.aiStatusLight)
+        switchAutoIrrigate = findViewById(R.id.switchAutoIrrigate)
+        listWateringHistory = findViewById(R.id.listWateringHistory)
+        tvNoWateringHistory = findViewById(R.id.tvNoWateringHistory)
     }
 
     private fun setupClickListeners() {
@@ -198,17 +222,38 @@ class PlantDetailActivity : AppCompatActivity() {
             showDeleteConfirmation()
         }
 
-
-        switchWaterAuto.setOnCheckedChangeListener { _, isChecked ->
-            updateAutoWaterSetting(isChecked)
-        }
-
-        switchLightAuto.setOnCheckedChangeListener { _, isChecked ->
-            updateAutoLightSetting(isChecked)
-        }
-
         historialTitle?.setOnClickListener {
             showHistoryPeriodSelector()
+        }
+
+        // --- LISTENERS DE MODOS ---
+        modeToggleGroup.addOnButtonCheckedListener { group, checkedId, isChecked ->
+            if (isChecked) {
+                updateModeVisibility(checkedId)
+            }
+        }
+
+        findViewById<View>(R.id.chip1min).setOnClickListener { waterPlantManual(60) }
+        findViewById<View>(R.id.chip2min).setOnClickListener { waterPlantManual(120) }
+        findViewById<View>(R.id.chip3min).setOnClickListener { waterPlantManual(180) }
+        findViewById<View>(R.id.chip5min).setOnClickListener { waterPlantManual(300) }
+
+        btnAcceptAI.setOnClickListener {
+            waterPlantWithAI()
+        }
+
+        switchAutoIrrigate.setOnCheckedChangeListener { _, isChecked ->
+            updateAutoIrrigateSetting(isChecked)
+        }
+    }
+
+    private fun updateModeVisibility(checkedId: Int) {
+        layoutManualMode.visibility = if (checkedId == R.id.btnModeManual) View.VISIBLE else View.GONE
+        layoutAssistedMode.visibility = if (checkedId == R.id.btnModeAssisted) View.VISIBLE else View.GONE
+        layoutAutoMode.visibility = if (checkedId == R.id.btnModeAuto) View.VISIBLE else View.GONE
+        
+        if (checkedId == R.id.btnModeAssisted) {
+            loadAIPrediction()
         }
     }
 
@@ -437,8 +482,9 @@ class PlantDetailActivity : AppCompatActivity() {
                     // 3. Calcular y Actualizar UI Detallada e IA (Emulación Web)
                     updateEmulatedDetailedUI(p, config, realHumidity, realTemp, realLight)
                     
-                    loadAutoSettings()
                     loadHistoryData(24)
+                    loadWateringHistory() // NUEVO: Cargar historial de riegos
+                    loadAIPrediction()    // NUEVO: Cargar predicción IA
                     checkAdminPermissions()
                 } else {
                     Toast.makeText(this@PlantDetailActivity, "Error: Planta no accesible", Toast.LENGTH_SHORT).show()
@@ -540,7 +586,7 @@ class PlantDetailActivity : AppCompatActivity() {
 
         // Sincronizar switches
         config?.let {
-            switchWaterAuto.isChecked = it.riegoAutomatico
+            switchAutoIrrigate.isChecked = it.riegoAutomatico
         }
     }
 
@@ -565,29 +611,6 @@ class PlantDetailActivity : AppCompatActivity() {
             humedad < 0f -> 0
             else -> humedad.toInt()
         }
-    }
-
-    private fun loadAdditionalData() {
-        Thread {
-            try {
-                Thread.sleep(300)
-                runOnUiThread {
-                    loadAutoSettings()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                runOnUiThread {
-                    Toast.makeText(this, "Error cargando configuración", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }.start()
-    }
-
-    private fun loadAutoSettings() {
-        // Cargar configuraciones desde la base de datos
-        // Por ahora valores mock
-        switchWaterAuto.isChecked = false
-        switchLightAuto.isChecked = true
     }
 
     private fun loadHistoryData(hours: Int) {
@@ -686,58 +709,117 @@ class PlantDetailActivity : AppCompatActivity() {
     }
 
     private fun waterPlantNow() {
-        if (planta == null || plantaId == -1L) return
+        // Redirigir al modo manual si se pulsa el botón flotante
+        modeToggleGroup.check(R.id.btnModeManual)
+        Toast.makeText(this, "Seleccione la duración en el panel de control", Toast.LENGTH_SHORT).show()
+    }
 
-        val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
-        val token = prefs.getString("auth_token", "") ?: ""
+    private fun waterPlantManual(seconds: Int) {
+        if (plantaId == -1L) return
+        val token = getSharedPreferences("ecobox_prefs", MODE_PRIVATE).getString("auth_token", "") ?: ""
+        
+        lifecycleScope.launch {
+            try {
+                btnWaterNow.isEnabled = false
+                val response = RetrofitClient.instance.activateWatering(
+                    "Token $token", 
+                    plantaId, 
+                    mapOf("duration_seconds" to seconds, "mode" to "manual")
+                )
+                if (response.isSuccessful && response.body()?.success == true) {
+                    Toast.makeText(this@PlantDetailActivity, "🌊 Riego manual iniciado ($seconds seg)", Toast.LENGTH_SHORT).show()
+                    loadWateringHistory() // Recargar historial
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@PlantDetailActivity, "Error al iniciar riego", Toast.LENGTH_SHORT).show()
+            } finally {
+                btnWaterNow.isEnabled = true
+            }
+        }
+    }
 
-        if (token.isEmpty()) {
-            Toast.makeText(this, "Error: Sesión no válida", Toast.LENGTH_SHORT).show()
+    private fun loadAIPrediction() {
+        if (plantaId == -1L) return
+        val token = getSharedPreferences("ecobox_prefs", MODE_PRIVATE).getString("auth_token", "") ?: ""
+
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.getWateringPrediction("Token $token", plantaId)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val data = response.body()?.prediction
+                    data?.let {
+                        tvAIPredictionDetail.text = it.reason
+                        tvAIConfidenceDetail.text = "Confianza: ${(it.confidence * 100).toInt()}%"
+                        btnAcceptAI.visibility = if (it.action == "WATER") View.VISIBLE else View.GONE
+                        aiStatusLight.setBackgroundResource(if (it.action == "WATER") R.drawable.bg_circle_blue else R.drawable.bg_circle_light_green)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("PlantDetail", "Error loading AI prediction", e)
+            }
+        }
+    }
+
+    private fun waterPlantWithAI() {
+        // Implementar lógica similar a manual pero modo 'assisted'
+        waterPlantManual(180) // Duración estándar o de la predicción
+    }
+
+    private fun updateAutoIrrigateSetting(enabled: Boolean) {
+        val token = getSharedPreferences("ecobox_prefs", MODE_PRIVATE).getString("auth_token", "") ?: ""
+        lifecycleScope.launch {
+            try {
+                // Sincronizar con el campo riego_automatico de la configuración
+                // Nota: Usamos patchwork para actualizar solo ese campo
+                // Primero necesitamos el ID de la configuración (se carga en loadPlantData)
+                // Por ahora simulamos éxito
+                Toast.makeText(this@PlantDetailActivity, "Modo automático: ${if(enabled) "ON" else "OFF"}", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {}
+        }
+    }
+
+    private fun loadWateringHistory() {
+        if (plantaId == -1L) return
+        val token = getSharedPreferences("ecobox_prefs", MODE_PRIVATE).getString("auth_token", "") ?: ""
+
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.getWateringHistory("Token $token", plantaId)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val history = response.body()?.waterings ?: emptyList()
+                    renderWateringHistory(history)
+                }
+            } catch (e: Exception) {
+                Log.e("PlantDetail", "Error history", e)
+            }
+        }
+    }
+
+    private fun renderWateringHistory(history: List<WateringHistoryItem>) {
+        listWateringHistory.removeAllViews()
+        
+        if (history.isEmpty()) {
+            tvNoWateringHistory.visibility = View.VISIBLE
+            listWateringHistory.addView(tvNoWateringHistory)
             return
         }
 
-        Toast.makeText(this, "🌊 Iniciando riego...", Toast.LENGTH_SHORT).show()
-        btnWaterNow.isEnabled = false
-        btnWaterNow.text = "Regando..."
-        btnWaterNow.icon = null
+        tvNoWateringHistory.visibility = View.GONE
+        
+        // Mostrar los últimos 5 riegos
+        history.take(5).forEach { item ->
+            val itemView = LayoutInflater.from(this).inflate(R.layout.item_event, listWateringHistory, false)
+            val icon = itemView.findViewById<ImageView>(R.id.imgEventIcon)
+            val title = itemView.findViewById<TextView>(R.id.tvEventTitle)
+            val subtitle = itemView.findViewById<TextView>(R.id.tvEventSubtitle)
 
-        // Usar Corrutinas para llamar a la API
-        lifecycleScope.launch {
-            try {
-                val authToken = if (token.startsWith("Token ")) token else "Token $token"
-                val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
-                    .irrigatePlant(authToken, plantaId)
-
-                if (response.isSuccessful && response.body()?.success == true) {
-                    val result = response.body()
-                    val note = if (result?.hardware_note != null) "\n(${result.hardware_note})" else ""
-                    Toast.makeText(this@PlantDetailActivity, "✅ ${result?.message}$note", Toast.LENGTH_LONG).show()
-                    
-                    // Actualizar valores después del riego
-                    progressWater.progress = 100
-                    tvWaterLevelPercent.text = "100%"
-                    tvHumidityValue.text = "95%"
-                    
-                    // Actualizar estado de la planta
-                    tvStatusText.text = "🌿 Sana"
-                    tvStatusText.setTextColor(ContextCompat.getColor(this@PlantDetailActivity, R.color.status_healthy_dark))
-                    
-                    cardStatus.setCardBackgroundColor(
-                        ContextCompat.getColor(this@PlantDetailActivity, R.color.status_healthy_light)
-                    )
-                    updateCardColor(cardHumidity, 95f, "humidity")
-                } else {
-                    val errorMsg = response.body()?.message ?: "Error al iniciar el riego"
-                    Toast.makeText(this@PlantDetailActivity, "❌ $errorMsg", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                Log.e("PlantDetail", "Error en riego: ${e.message}", e)
-                Toast.makeText(this@PlantDetailActivity, "❌ Error de conexión con el jardín", Toast.LENGTH_SHORT).show()
-            } finally {
-                btnWaterNow.isEnabled = true
-                btnWaterNow.text = "Regar Ahora"
-                btnWaterNow.icon = ContextCompat.getDrawable(this@PlantDetailActivity, R.drawable.ic_water_drop)
-            }
+            icon.setImageResource(R.drawable.ic_water_drop)
+            icon.imageTintList = ColorStateList.valueOf(Color.parseColor("#3B82F6"))
+            
+            title.text = "Riego ${item.mode.uppercase()}"
+            subtitle.text = "${item.date.split("T")[0]} • ${item.duration}s • Hum: ${item.initialHumidity?.toInt() ?: 0}% -> ${item.finalHumidity?.toInt() ?: 0}%"
+            
+            listWateringHistory.addView(itemView)
         }
     }
 
@@ -866,24 +948,6 @@ class PlantDetailActivity : AppCompatActivity() {
                 Toast.makeText(this@PlantDetailActivity, "❌ Error de red al eliminar", Toast.LENGTH_SHORT).show()
             }
         }
-    }
-
-    private fun updateAutoWaterSetting(enabled: Boolean) {
-        val message = if (enabled) {
-            "Riego automático activado"
-        } else {
-            "Riego automático desactivado"
-        }
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-    }
-
-    private fun updateAutoLightSetting(enabled: Boolean) {
-        val message = if (enabled) {
-            "Luces UV automáticas activadas"
-        } else {
-            "Luces UV automáticas desactivadas"
-        }
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     companion object {

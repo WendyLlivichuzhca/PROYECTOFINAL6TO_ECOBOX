@@ -583,12 +583,13 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- SECCIÓN: CONTROL DE RIEGO AVANZADO (PARIDAD WEB) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
                 android:layout_marginBottom="12dp"
-                android:text="Automatización"
+                android:text="Modo de Control"
                 android:textColor="#111827"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -606,95 +607,257 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <LinearLayout
+                    <!-- Selector de Modos -->
+                    <com.google.android.material.button.MaterialButtonToggleGroup
+                        android:id="@+id/modeToggleGroup"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:padding="20dp">
+                        android:layout_margin="16dp"
+                        app:checkedButton="@+id/btnModeAssisted"
+                        app:singleSelection="true">
 
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_marginEnd="16dp"
-                            android:src="@drawable/ic_water_drop"
-                            app:tint="#9CA3AF" />
-
-                        <LinearLayout
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnModeManual"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:text="Manual"
+                            android:textSize="12sp"
+                            android:textAllCaps="false"/>
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Riego Inteligente"
-                                android:textColor="#1F2937"
-                                android:textSize="16sp"
-                                android:textStyle="bold" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnModeAssisted"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.2"
+                            android:text="Asistido"
+                            android:textSize="12sp"
+                            android:textAllCaps="false"/>
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="Se activa si hum &lt; 40%"
-                                android:textColor="#9CA3AF"
-                                android:textSize="13sp" />
-                        </LinearLayout>
-
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/switchWaterAuto"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginHorizontal="20dp"
-                        android:background="#F3F4F6" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:padding="20dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_marginEnd="16dp"
-                            android:src="@drawable/ic_sun"
-                            app:tint="#9CA3AF" />
-
-                        <LinearLayout
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnModeAuto"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:text="Auto"
+                            android:textSize="12sp"
+                            android:textAllCaps="false"/>
+                    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                    <!-- Contenedor Dinámico de Modo -->
+                    <LinearLayout
+                        android:id="@+id/modeContentContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="20dp"
+                        android:paddingBottom="20dp">
+
+                        <!-- Contenido Modo MANUAL -->
+                        <LinearLayout
+                            android:id="@+id/layoutManualMode"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Luces UV"
+                                android:text="Elija la duración del riego:"
+                                android:textColor="#6B7280"
+                                android:textSize="13sp"
+                                android:layout_marginBottom="12dp"/>
+
+                            <HorizontalScrollView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:scrollbars="none">
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal">
+
+                                    <com.google.android.material.chip.Chip
+                                        android:id="@+id/chip1min"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="1 min"
+                                        app:chipBackgroundColor="#F3F4F6"/>
+
+                                    <com.google.android.material.chip.Chip
+                                        android:id="@+id/chip2min"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="2 min"
+                                        android:layout_marginStart="8dp"
+                                        app:chipBackgroundColor="#F3F4F6"/>
+
+                                    <com.google.android.material.chip.Chip
+                                        android:id="@+id/chip3min"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="3 min"
+                                        android:layout_marginStart="8dp"
+                                        app:chipBackgroundColor="#F3F4F6"/>
+
+                                    <com.google.android.material.chip.Chip
+                                        android:id="@+id/chip5min"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="5 min"
+                                        android:layout_marginStart="8dp"
+                                        app:chipBackgroundColor="#F3F4F6"/>
+                                </LinearLayout>
+                            </HorizontalScrollView>
+                        </LinearLayout>
+
+                        <!-- Contenido Modo ASISTIDO (IA) -->
+                        <LinearLayout
+                            android:id="@+id/layoutAssistedMode"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                app:cardBackgroundColor="#F5F3FF"
+                                app:cardCornerRadius="16dp"
+                                app:cardElevation="0dp"
+                                app:strokeColor="#DDD6FE"
+                                app:strokeWidth="1dp">
+                                
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:padding="16dp">
+                                    
+                                    <View
+                                        android:id="@+id/aiStatusLight"
+                                        android:layout_width="8dp"
+                                        android:layout_height="8dp"
+                                        android:layout_gravity="end"
+                                        android:background="@drawable/bg_circle_light_green"/>
+
+                                    <TextView
+                                        android:id="@+id/tvAIPredictionDetail"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="Analizando condiciones..."
+                                        android:textColor="#4C1D95"
+                                        android:textSize="14sp"
+                                        android:textStyle="bold"/>
+
+                                    <TextView
+                                        android:id="@+id/tvAIConfidenceDetail"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="4dp"
+                                        android:text="Confianza: --%"
+                                        android:textColor="#7C3AED"
+                                        android:textSize="12sp"/>
+                                    
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnAcceptAI"
+                                        style="@style/Widget.MaterialComponents.Button"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="12dp"
+                                        android:text="Seguir Recomendación"
+                                        android:textAllCaps="false"
+                                        android:textSize="12sp"
+                                        app:cornerRadius="12dp"
+                                        android:backgroundTint="#7C3AED"
+                                        android:visibility="gone"/>
+                                </LinearLayout>
+                            </com.google.android.material.card.MaterialCardView>
+                        </LinearLayout>
+
+                        <!-- Contenido Modo AUTOMÁTICO -->
+                        <LinearLayout
+                            android:id="@+id/layoutAutoMode"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone">
+
+                            <com.google.android.material.materialswitch.MaterialSwitch
+                                android:id="@+id/switchAutoIrrigate"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Riego Automático Inteligente"
                                 android:textColor="#1F2937"
-                                android:textSize="16sp"
+                                android:textSize="14sp"
                                 android:textStyle="bold" />
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="Auto: 18:00 - 06:00"
-                                android:textColor="#9CA3AF"
-                                android:textSize="13sp" />
+                                android:text="El sistema regará basado únicamente en decisiones de la IA."
+                                android:textColor="#6B7280"
+                                android:textSize="12sp"
+                                android:layout_marginTop="4dp"/>
                         </LinearLayout>
-
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/switchLightAuto"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
                     </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SECCIÓN: HISTORIAL DE RIEGO (Web Style) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="12dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Historial de Riegos"
+                    android:textColor="#111827"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvSeeAllWatering"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ver todo"
+                    android:textColor="#059669"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#E5E7EB"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:id="@+id/listWateringHistory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="8dp">
+
+                    <TextView
+                        android:id="@+id/tvNoWateringHistory"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="24dp"
+                        android:text="Cargando historial..."
+                        android:textAlignment="center"
+                        android:textColor="#9CA3AF" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

@@ -83,6 +83,11 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
             startActivity(Intent(requireContext(), RecommendationsActivity::class.java))
         }
 
+        // Botón Configurar IA
+        view.findViewById<View>(R.id.btnManageAi)?.setOnClickListener {
+            startActivity(Intent(requireContext(), com.example.proyectofinal6to_ecobox.presentacion.ui.AIControlActivity::class.java))
+        }
+
         // Configurar Gráfico
         val chartDashboard = view.findViewById<LineChart>(R.id.chartDashboard)
         if (chartDashboard != null) {
