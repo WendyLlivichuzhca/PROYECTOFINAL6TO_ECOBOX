@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -32,6 +33,8 @@ import com.google.android.material.materialswitch.MaterialSwitch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class PlantDetailActivity : AppCompatActivity() {
 
@@ -77,6 +80,7 @@ class PlantDetailActivity : AppCompatActivity() {
     private var plantaFoto: String = ""
 
     private lateinit var btnGestionarSensores: MaterialButton
+    private var isAdmin: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -159,6 +163,7 @@ class PlantDetailActivity : AppCompatActivity() {
         btnDelete.setOnClickListener {
             showDeleteConfirmation()
         }
+
 
         switchWaterAuto.setOnCheckedChangeListener { _, isChecked ->
             updateAutoWaterSetting(isChecked)
@@ -313,18 +318,21 @@ class PlantDetailActivity : AppCompatActivity() {
                 true
             }
 
-            R.id.btnEdit -> {
-                navigateToEditPlant()
-                true
-            }
-
-            R.id.action_delete -> {
-                showDeleteConfirmation()
+            R.id.action_config -> {
+                navigateToConfig()
                 true
             }
 
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun navigateToConfig() {
+        val intent = Intent(this, PlantConfigActivity::class.java).apply {
+            putExtra("PLANTA_ID", plantaId)
+            putExtra("PLANTA_NOMBRE", plantaNombre)
+        }
+        startActivity(intent)
     }
 
     private fun loadPlantData() {
@@ -366,6 +374,7 @@ class PlantDetailActivity : AppCompatActivity() {
                         )
                         loadAdditionalData()
                         loadHistoryData(24)
+                        checkAdminPermissions()
                     } else {
                         Toast.makeText(
                             this,
@@ -603,37 +612,59 @@ class PlantDetailActivity : AppCompatActivity() {
     }
 
     private fun waterPlantNow() {
+        if (planta == null || plantaId == -1L) return
+
+        val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
+        val token = prefs.getString("auth_token", "") ?: ""
+
+        if (token.isEmpty()) {
+            Toast.makeText(this, "Error: Sesión no válida", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         Toast.makeText(this, "🌊 Iniciando riego...", Toast.LENGTH_SHORT).show()
         btnWaterNow.isEnabled = false
         btnWaterNow.text = "Regando..."
         btnWaterNow.icon = null
 
-        btnWaterNow.postDelayed({
-            btnWaterNow.isEnabled = true
-            btnWaterNow.text = "Regar Ahora"
-            btnWaterNow.icon = ContextCompat.getDrawable(this, R.drawable.ic_water_drop)
-            Toast.makeText(this, "✅ Riego completado", Toast.LENGTH_SHORT).show()
+        // Usar Corrutinas para llamar a la API
+        lifecycleScope.launch {
+            try {
+                val authToken = if (token.startsWith("Token ")) token else "Token $token"
+                val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                    .irrigatePlant(authToken, plantaId)
 
-            // Actualizar valores después del riego
-            progressWater.progress = 100
-            tvWaterLevelPercent.text = "100%"
-            tvHumidityValue.text = "95%"
-
-            // Actualizar estado de la planta
-            tvStatusText.text = "🌿 Sana"
-            tvStatusText.setTextColor(ContextCompat.getColor(this, R.color.status_healthy_dark))
-
-            // Actualizar color de la card de estado
-            cardStatus.setCardBackgroundColor(
-                ContextCompat.getColor(
-                    this,
-                    R.color.status_healthy_light
-                )
-            )
-
-            // Actualizar color de la card de humedad
-            updateCardColor(cardHumidity, 95f, "humidity")
-        }, 2000)
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val result = response.body()
+                    val note = if (result?.hardware_note != null) "\n(${result.hardware_note})" else ""
+                    Toast.makeText(this@PlantDetailActivity, "✅ ${result?.message}$note", Toast.LENGTH_LONG).show()
+                    
+                    // Actualizar valores después del riego
+                    progressWater.progress = 100
+                    tvWaterLevelPercent.text = "100%"
+                    tvHumidityValue.text = "95%"
+                    
+                    // Actualizar estado de la planta
+                    tvStatusText.text = "🌿 Sana"
+                    tvStatusText.setTextColor(ContextCompat.getColor(this@PlantDetailActivity, R.color.status_healthy_dark))
+                    
+                    cardStatus.setCardBackgroundColor(
+                        ContextCompat.getColor(this@PlantDetailActivity, R.color.status_healthy_light)
+                    )
+                    updateCardColor(cardHumidity, 95f, "humidity")
+                } else {
+                    val errorMsg = response.body()?.message ?: "Error al iniciar el riego"
+                    Toast.makeText(this@PlantDetailActivity, "❌ $errorMsg", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Log.e("PlantDetail", "Error en riego: ${e.message}", e)
+                Toast.makeText(this@PlantDetailActivity, "❌ Error de conexión con el jardín", Toast.LENGTH_SHORT).show()
+            } finally {
+                btnWaterNow.isEnabled = true
+                btnWaterNow.text = "Regar Ahora"
+                btnWaterNow.icon = ContextCompat.getDrawable(this@PlantDetailActivity, R.drawable.ic_water_drop)
+            }
+        }
     }
 
     private fun showDeleteConfirmation() {
@@ -722,6 +753,29 @@ class PlantDetailActivity : AppCompatActivity() {
         }
 
         dialog.show()
+    }
+
+    private fun checkAdminPermissions() {
+        val currentPlanta = planta ?: return
+        Thread {
+            try {
+                val isAdmin = com.example.proyectofinal6to_ecobox.data.dao.FamiliaDao.esAdministrador(currentPlanta.familiaId, userId)
+                
+                runOnUiThread {
+                    this@PlantDetailActivity.isAdmin = isAdmin
+                    // Notificar si no es admin para deshabilitar opciones de menú
+                    invalidateOptionsMenu()
+                }
+            } catch (e: Exception) {
+                Log.e("PlantDetail", "Error verificando permisos: ${e.message}")
+            }
+        }.start()
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
+        // Todos pueden ver la configuración
+        menu?.findItem(R.id.action_config)?.isVisible = true
+        return super.onPrepareOptionsMenu(menu)
     }
 
     private fun deletePlant() {

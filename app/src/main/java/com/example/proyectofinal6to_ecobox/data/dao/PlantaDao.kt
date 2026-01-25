@@ -58,6 +58,13 @@ object PlantaDao {
         val value: Float
     )
 
+    data class ConfiguracionPlanta(
+        val plantaId: Long,
+        val humedadObjetivo: Float,
+        val tempMin: Float,
+        val tempMax: Float
+    )
+
     data class PlantaConDatos(
         val id: Long,
         val nombre: String,
@@ -2455,5 +2462,59 @@ object PlantaDao {
         } else {
             emptyList()
         }
+    }
+
+    fun obtenerConfiguracionPlanta(plantaId: Long): ConfiguracionPlanta {
+        val conexion = MySqlConexion.getConexion()
+        var config = ConfiguracionPlanta(plantaId, 60f, 15f, 30f)
+        try {
+            if (conexion != null) {
+                val sql = "SELECT * FROM planta_configuracion WHERE planta_id = ?"
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, plantaId)
+                val rs = stmt.executeQuery()
+                if (rs.next()) {
+                    config = ConfiguracionPlanta(plantaId, rs.getFloat("humedad_objetivo"), rs.getFloat("temp_min"), rs.getFloat("temp_max"))
+                }
+                rs.close()
+                stmt.close()
+                conexion.close()
+            }
+        } catch (e: Exception) {
+            if (e.message?.contains("doesn't exist") == true) crearTablaConfiguracionSiNoExiste()
+        }
+        return config
+    }
+
+    fun guardarConfiguracionPlanta(config: ConfiguracionPlanta): Boolean {
+        val conexion = MySqlConexion.getConexion()
+        var exito = false
+        try {
+            if (conexion != null) {
+                val sql = "INSERT INTO planta_configuracion (planta_id, humedad_objetivo, temp_min, temp_max) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE humedad_objetivo = VALUES(humedad_objetivo), temp_min = VALUES(temp_min), temp_max = VALUES(temp_max)"
+                val stmt = conexion.prepareStatement(sql)
+                stmt.setLong(1, config.plantaId)
+                stmt.setFloat(2, config.humedadObjetivo)
+                stmt.setFloat(3, config.tempMin)
+                stmt.setFloat(4, config.tempMax)
+                exito = stmt.executeUpdate() > 0
+                stmt.close()
+                conexion.close()
+            }
+        } catch (e: Exception) { android.util.Log.e("PlantaDao", "Error save: ${e.message}") }
+        return exito
+    }
+
+    private fun crearTablaConfiguracionSiNoExiste() {
+        val conexion = MySqlConexion.getConexion()
+        try {
+            if (conexion != null) {
+                val sql = "CREATE TABLE IF NOT EXISTS planta_configuracion (planta_id BIGINT PRIMARY KEY, humedad_objetivo FLOAT DEFAULT 60.0, temp_min FLOAT DEFAULT 15.0, temp_max FLOAT DEFAULT 30.0, FOREIGN KEY (planta_id) REFERENCES planta(id) ON DELETE CASCADE)"
+                val stmt = conexion.createStatement()
+                stmt.execute(sql)
+                stmt.close()
+                conexion.close()
+            }
+        } catch (e: Exception) { android.util.Log.e("PlantaDao", "Error table: ${e.message}") }
     }
 }

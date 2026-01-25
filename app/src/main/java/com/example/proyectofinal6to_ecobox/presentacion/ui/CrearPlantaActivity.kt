@@ -12,6 +12,7 @@ import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.FamiliaDao
 import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.data.model.Planta
+import com.example.proyectofinal6to_ecobox.data.model.PlantTemplate
 import com.example.proyectofinal6to_ecobox.utils.AppConfig
 import com.example.proyectofinal6to_ecobox.utils.ImageUtils
 import com.google.android.material.button.MaterialButton
@@ -43,6 +44,7 @@ class CrearPlantaActivity : AppCompatActivity() {
     private lateinit var btnSavePlant: MaterialButton
     private lateinit var btnCancel: MaterialButton
     private lateinit var btnBack: ImageView
+    private lateinit var etPlantType: AutoCompleteTextView
 
     // Campo para especie
     private lateinit var etPlantSpecies: TextInputEditText
@@ -158,6 +160,9 @@ class CrearPlantaActivity : AppCompatActivity() {
 
         // Inicializar el campo de especie
         etPlantSpecies = findViewById(R.id.etPlantSpecies)
+
+        // Inicializar selector de plantillas
+        etPlantType = findViewById(R.id.etPlantType)
     }
 
     private fun setupSpinners() {
@@ -188,6 +193,42 @@ class CrearPlantaActivity : AppCompatActivity() {
         // Establecer valores por defecto
         spinnerStatus.setText("normal", false)
         spinnerAppearance.setText("normal", false)
+
+        // Configurar adaptadores para plantillas
+        val templates = PlantTemplate.getTemplates()
+        val templateAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_dropdown_item_1line,
+            templates
+        )
+        etPlantType.setAdapter(templateAdapter)
+
+        // Listener para autocompletar según plantilla
+        etPlantType.setOnItemClickListener { parent, _, position, _ ->
+            val selectedTemplate = parent.getItemAtPosition(position) as PlantTemplate
+            autocompletarDesdePlantilla(selectedTemplate)
+        }
+    }
+
+    private fun autocompletarDesdePlantilla(template: PlantTemplate) {
+        // Autocompletar especie si está vacío
+        if (etPlantSpecies.text.isNullOrEmpty()) {
+            etPlantSpecies.setText(template.nombre)
+        }
+
+        // Generar notas sugeridas basadas en la plantilla
+        val notasSugeridas = """
+            ${template.descripcion}
+            
+            🌱 Cuidados Óptimos:
+            • Humedad: ${template.humedadOptima}%
+            • Temperatura: ${template.tempMin}°C - ${template.tempMax}°C
+            • Riego sugerido: cada ${template.frecuenciaRiego}
+        """.trimIndent()
+
+        etPlantDesc.setText(notasSugeridas)
+        
+        Toast.makeText(this, "Preset aplicado: ${template.nombre}", Toast.LENGTH_SHORT).show()
     }
 
     private fun setupListeners() {

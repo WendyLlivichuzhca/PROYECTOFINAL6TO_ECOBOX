@@ -49,21 +49,21 @@
             <TextView
                 android:id="@+id/tvWelcome"
                 android:text="¡Hola de nuevo!"
-                android:textSize="32sp"
-                android:textColor="#2D5A40"
+                android:textSize="@dimen/text_size_display"
+                android:textColor="@color/brand_green"
                 android:textStyle="bold"
                 android:fontFamily="sans-serif-medium"
                 android:layout_gravity="center"
-                android:layout_marginBottom="4dp"
+                android:layout_marginBottom="@dimen/spacing_xs"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 
             <TextView
                 android:text="Ingresa a tu cuenta"
-                android:textSize="14sp"
-                android:textColor="#A0A0A0"
+                android:textSize="@dimen/text_size_body"
+                android:textColor="@color/text_tertiary"
                 android:layout_gravity="center"
-                android:layout_marginBottom="40dp"
+                android:layout_marginBottom="@dimen/spacing_3xl"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 
@@ -75,22 +75,22 @@
                 <EditText
                     android:id="@+id/etLoginEmail"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="@dimen/input_height_lg"
                     android:background="@drawable/bg_input_exact"
                     android:hint="Correo electrónico"
                     android:paddingStart="50dp"
-                    android:textSize="15sp"
+                    android:textSize="@dimen/text_size_body"
                     android:inputType="textEmailAddress"
-                    android:textColor="#2D5A40"
-                    android:textColorHint="#8E9E93"/>
+                    android:textColor="@color/brand_green"
+                    android:textColorHint="@color/text_tertiary"/>
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="@dimen/icon_size_sm"
+                    android:layout_height="@dimen/icon_size_sm"
                     android:src="@drawable/ic_person"
-                    app:tint="#49755B"
+                    app:tint="@color/primary_700"
                     android:layout_gravity="center_vertical"
-                    android:layout_marginStart="16dp"/>
+                    android:layout_marginStart="@dimen/spacing_base"/>
             </FrameLayout>
 
             <FrameLayout
@@ -100,32 +100,32 @@
                 <EditText
                     android:id="@+id/etLoginPass"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="@dimen/input_height_lg"
                     android:background="@drawable/bg_input_exact"
                     android:hint="••••••••"
                     android:paddingStart="50dp"
                     android:paddingEnd="50dp"
-                    android:textSize="15sp"
+                    android:textSize="@dimen/text_size_body"
                     android:inputType="textPassword"
-                    android:textColor="#2D5A40"
-                    android:textColorHint="#8E9E93"/>
+                    android:textColor="@color/brand_green"
+                    android:textColorHint="@color/text_tertiary"/>
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="@dimen/icon_size_sm"
+                    android:layout_height="@dimen/icon_size_sm"
                     android:src="@drawable/ic_lock"
-                    app:tint="#49755B"
+                    app:tint="@color/primary_700"
                     android:layout_gravity="center_vertical"
-                    android:layout_marginStart="16dp"/>
+                    android:layout_marginStart="@dimen/spacing_base"/>
 
                 <ImageView
                     android:id="@+id/btnTogglePassword"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="@dimen/icon_size_md"
+                    android:layout_height="@dimen/icon_size_md"
                     android:src="@drawable/ic_eye_visibility"
-                    app:tint="#49755B"
+                    app:tint="@color/primary_700"
                     android:layout_gravity="center_vertical|end"
-                    android:layout_marginEnd="16dp"/>
+                    android:layout_marginEnd="@dimen/spacing_base"/>
             </FrameLayout>
 
             <LinearLayout
@@ -155,8 +155,8 @@
 
                     <TextView
                         android:text="Recordarme"
-                        android:textColor="#A0A0A0"
-                        android:textSize="12sp"
+                        android:textColor="@color/text_tertiary"
+                        android:textSize="@dimen/text_size_small"
                         android:includeFontPadding="false"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"/>
@@ -165,9 +165,9 @@
                 <TextView
                     android:id="@+id/btnGoToForgot"
                     android:text="¿Olvidaste tu contraseña?"
-                    android:textColor="#2D5A40"
+                    android:textColor="@color/brand_green"
                     android:textStyle="bold"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/text_size_small"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
             </LinearLayout>
@@ -175,13 +175,13 @@
             <Button
                 android:id="@+id/btnLogin"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:layout_marginTop="32dp"
+                android:layout_height="@dimen/button_height_xl"
+                android:layout_marginTop="@dimen/spacing_2xl"
                 android:text="Iniciar Sesión"
-                android:backgroundTint="#2D5A40"
-                android:textSize="16sp"
-                app:cornerRadius="30dp"
+                android:background="@drawable/bg_button_primary"
+                android:textSize="@dimen/text_size_body_lg"
                 android:textStyle="bold"
+                android:textColor="@color/white"
                 android:textAllCaps="false"/>
 
             <LinearLayout
@@ -192,17 +192,17 @@
                 android:layout_marginTop="24dp">
                 <TextView
                     android:text="¿No tienes cuenta? "
-                    android:textColor="#A0A0A0"
-                    android:textSize="13sp"
+                    android:textColor="@color/text_tertiary"
+                    android:textSize="@dimen/text_size_small"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
                 <TextView
                     android:id="@+id/btnGoToRegister"
                     android:text="Regístrate"
                     android:textStyle="bold"
-                    android:textColor="#2D5A40"
-                    android:layout_marginStart="4dp"
-                    android:textSize="13sp"
+                    android:textColor="@color/brand_green"
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    android:textSize="@dimen/text_size_small"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
             </LinearLayout>

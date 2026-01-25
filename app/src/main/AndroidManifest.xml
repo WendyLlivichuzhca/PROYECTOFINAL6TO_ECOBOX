@@ -110,6 +110,8 @@
             android:name=".presentacion.ui.AllEventsActivity"
             android:exported="false" />
         <activity android:name=".presentacion.ui.EditarPlantaActivity" />
+        <activity android:name=".presentacion.ui.PlantConfigActivity" />
+        <activity android:name=".presentacion.ui.RecommendationsActivity" />
 
         <receiver
             android:name=".data.worker.EcoBoxBootReceiver"

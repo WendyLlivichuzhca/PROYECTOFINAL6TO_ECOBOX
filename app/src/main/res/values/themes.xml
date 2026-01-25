@@ -1,18 +1,67 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
     <style name="Theme.PROYECTOFINAL6TO_ECOBOX" parent="Theme.Material3.Light.NoActionBar">
-        <item name="colorPrimary">@color/eco_primary</item>
-        <item name="colorPrimaryVariant">@color/eco_primary_dark</item>
+        <!-- Colores Primarios -->
+        <item name="colorPrimary">@color/primary_500</item>
+        <item name="colorPrimaryVariant">@color/primary_900</item>
         <item name="colorOnPrimary">@color/white</item>
+        
+        <!-- Colores Secundarios -->
+        <item name="colorSecondary">@color/primary_700</item>
+        <item name="colorSecondaryVariant">@color/primary_800</item>
+        <item name="colorOnSecondary">@color/white</item>
+        
+        <!-- Colores de Superficie -->
+        <item name="colorSurface">@color/surface_primary</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        
+        <!-- Colores de Fondo -->
+        <item name="android:colorBackground">@color/surface_tertiary</item>
+        <item name="colorOnBackground">@color/text_primary</item>
+        
+        <!-- Colores de Error -->
+        <item name="colorError">@color/error_500</item>
+        <item name="colorOnError">@color/white</item>
+        
+        <!-- Status Bar -->
         <item name="android:statusBarColor">@color/eco_background</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowTranslucentStatus">true</item>
+        
+        <!-- Navigation Bar -->
+        <item name="android:navigationBarColor">@color/surface_primary</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
+        
+        <!-- Shape Appearances -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.EcoBox.SmallComponent</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.EcoBox.MediumComponent</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.EcoBox.LargeComponent</item>
+        
+        <!-- Text Appearances -->
+        <item name="textAppearanceHeadline3">@style/TextAppearance.EcoBox.Display</item>
+        <item name="textAppearanceHeadline4">@style/TextAppearance.EcoBox.Heading1</item>
+        <item name="textAppearanceHeadline5">@style/TextAppearance.EcoBox.Heading2</item>
+        <item name="textAppearanceHeadline6">@style/TextAppearance.EcoBox.Heading3</item>
+        <item name="textAppearanceBody1">@style/TextAppearance.EcoBox.Body1</item>
+        <item name="textAppearanceBody2">@style/TextAppearance.EcoBox.Body2</item>
+        <item name="textAppearanceCaption">@style/TextAppearance.EcoBox.Caption</item>
+        
+        <!-- Component Styles -->
+        <!-- Comentado para evitar conflictos - usar explícitamente cuando sea necesario -->
+        <!-- <item name="materialCardViewStyle">@style/Widget.EcoBox.Card</item> -->
+        <!-- <item name="materialButtonStyle">@style/Widget.EcoBox.Button</item> -->
+        <!-- <item name="floatingActionButtonStyle">@style/Widget.EcoBox.FloatingActionButton</item> -->
+        
+        <!-- Ripple Color -->
+        <item name="colorControlHighlight">@color/primary_100</item>
     </style>
 
+    <!-- Estilos heredados para compatibilidad -->
     <style name="RoundedImageSquare">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">12dp</item>
+        <item name="cornerSize">@dimen/corner_radius_md</item>
     </style>
+    
     <style name="CircleImage">
         <item name="cornerSize">50%</item>
     </style>

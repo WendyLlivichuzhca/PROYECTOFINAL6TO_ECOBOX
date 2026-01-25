@@ -1,49 +1,194 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="eco_primary_dark">#1B5E20</color>
-    <color name="eco_background">#F9FBE7</color>
-    <color name="eco_border">#A5D6A7</color>
-    <color name="gray_text">#757575</color>
-    <color name="white">#FFFFFF</color>
-    <color name="eco_primary">#4CAF50</color>
-    <color name="status_critical">#EF5350</color>
-    <color name="status_warning">#FFA726</color>
-    <color name="status_healthy">#66BB6A</color>
-    <color name="bg_cream">#F9FBE7</color>
-    <color name="text_dark">#212121</color>
-    <color name="text_gray">#757575</color>
-    <color name="green_header">#2E7D32</color>
-    <color name="sensor_yellow">#FFC107</color>
-    <color name="sensor_red">#F44336</color>
-    <color name="sensor_green">#4CAF50</color>
-    <color name="sensor_orange">#FF9800</color>
-    <color name="text_primary">#212121</color>
-    <color name="status_healthy_dark">#047857</color>
-    <color name="status_warning_dark">#B45309</color>
-    <color name="status_critical_dark">#B91C1C</color>
+    <!-- ========================================= -->
+    <!-- COLORES PRIMARIOS - Verde Ecológico -->
+    <!-- ========================================= -->
+    <color name="primary_50">#E8F5E9</color>
+    <color name="primary_100">#C8E6C9</color>
+    <color name="primary_200">#A5D6A7</color>
+    <color name="primary_300">#81C784</color>
+    <color name="primary_400">#66BB6A</color>
+    <color name="primary_500">#4CAF50</color>
+    <color name="primary_600">#43A047</color>
+    <color name="primary_700">#388E3C</color>
+    <color name="primary_800">#2E7D32</color>
+    <color name="primary_900">#1B5E20</color>
+    
+    <!-- Verde Marca (Brand) -->
     <color name="brand_green">#2D5A40</color>
-    <color name="alert_critical_text">#DC2626</color>
-    <color name="alert_warning_text">#D97706</color>
+    <color name="brand_green_light">#3D6E54</color>
+    <color name="brand_green_dark">#1F3E2C</color>
+
+    <!-- ========================================= -->
+    <!-- ESCALA DE GRISES -->
+    <!-- ========================================= -->
+    <color name="gray_50">#F9FAFB</color>
+    <color name="gray_100">#F3F4F6</color>
+    <color name="gray_200">#E5E7EB</color>
+    <color name="gray_300">#D1D5DB</color>
+    <color name="gray_400">#9CA3AF</color>
+    <color name="gray_500">#6B7280</color>
+    <color name="gray_600">#4B5563</color>
+    <color name="gray_700">#374151</color>
+    <color name="gray_800">#1F2937</color>
+    <color name="gray_900">#111827</color>
+
+    <!-- ========================================= -->
+    <!-- COLORES SEMÁNTICOS - Estados -->
+    <!-- ========================================= -->
+    
+    <!-- Success / Healthy (Verde) -->
+    <color name="success_50">#ECFDF5</color>
+    <color name="success_100">#D1FAE5</color>
+    <color name="success_500">#10B981</color>
+    <color name="success_600">#059669</color>
+    <color name="success_700">#047857</color>
+    <color name="success_900">#064E3B</color>
+    
+    <!-- Warning (Amarillo/Naranja) -->
+    <color name="warning_50">#FEF3C7</color>
+    <color name="warning_100">#FDE68A</color>
+    <color name="warning_500">#F59E0B</color>
+    <color name="warning_600">#D97706</color>
+    <color name="warning_700">#B45309</color>
+    <color name="warning_900">#78350F</color>
+    
+    <!-- Error / Critical (Rojo) -->
+    <color name="error_50">#FEF2F2</color>
+    <color name="error_100">#FEE2E2</color>
+    <color name="error_500">#EF4444</color>
+    <color name="error_600">#DC2626</color>
+    <color name="error_700">#B91C1C</color>
+    <color name="error_900">#7F1D1D</color>
+    
+    <!-- Info (Azul) -->
+    <color name="info_50">#EFF6FF</color>
+    <color name="info_100">#DBEAFE</color>
+    <color name="info_500">#3B82F6</color>
+    <color name="info_600">#2563EB</color>
+    <color name="info_700">#1D4ED8</color>
+
+    <!-- ========================================= -->
+    <!-- COLORES DE SUPERFICIE Y FONDO -->
+    <!-- ========================================= -->
+    <color name="surface_primary">#FFFFFF</color>
+    <color name="surface_secondary">#F8FAF9</color>
+    <color name="surface_tertiary">#F5F7F6</color>
+    <color name="background_primary">#F9FBE7</color>
+    <color name="background_secondary">#F8FCF8</color>
+    <color name="background_cream">#F9FBE7</color>
+
+    <!-- ========================================= -->
+    <!-- COLORES DE TEXTO -->
+    <!-- ========================================= -->
+    <color name="text_primary">#111827</color>
     <color name="text_secondary">#6B7280</color>
-    <color name="secondary_text">#6B7280</color>
-    <color name="circle_primary">#4CAF50</color>
-    <color name="status_healthy_light">#ECFDF5</color>
-    <color name="status_warning_light">#FEF3C7</color>
-    <color name="primary">#4CAF50</color>
-    <color name="error">#F44336</color>
-    <color name="warning">#FF9800</color>
-    <color name="status_critical_light">#FEF2F2</color>
-    <color name="status_unknown_light">#F3F4F6</color>
-    <color name="primary_dark">#1B5E20</color>
-    <color name="primary_light">#4CAF50</color>
-    <color name="accent">#388E3C</color>
-    <color name="background_gray">#F8FCF8</color>
-    <color name="card_background">#FFFFFF</color>
+    <color name="text_tertiary">#9CA3AF</color>
+    <color name="text_disabled">#D1D5DB</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    <color name="text_on_dark">#FFFFFF</color>
+
+    <!-- ========================================= -->
+    <!-- COLORES DE BORDE Y DIVISORES -->
+    <!-- ========================================= -->
+    <color name="border_primary">#E5E7EB</color>
+    <color name="border_secondary">#F3F4F6</color>
     <color name="border_light">#F0F0F0</color>
+    <color name="border_success">#D1FAE5</color>
+    <color name="border_warning">#FDE68A</color>
+    <color name="border_error">#FCA5A5</color>
+    <color name="divider">#F3F4F6</color>
+
+    <!-- ========================================= -->
+    <!-- COLORES DE SENSORES -->
+    <!-- ========================================= -->
+    <color name="sensor_humidity">#3B82F6</color>
+    <color name="sensor_light">#F59E0B</color>
+    <color name="sensor_temperature">#EF4444</color>
+    <color name="sensor_ph">#8B5CF6</color>
+    <color name="sensor_air">#06B6D4</color>
+    <color name="sensor_default">#6B7280</color>
+
+    <!-- ========================================= -->
+    <!-- OVERLAYS Y SOMBRAS -->
+    <!-- ========================================= -->
+    <color name="overlay_light">#40FFFFFF</color>
+    <color name="overlay_medium">#80FFFFFF</color>
+    <color name="overlay_dark">#40000000</color>
+    <color name="overlay_darker">#80000000</color>
+    <color name="scrim">#B3000000</color>
+    <color name="shadow">#1A000000</color>
+
+    <!-- ========================================= -->
+    <!-- COLORES ESPECIALES -->
+    <!-- ========================================= -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+    
+    <!-- Glassmorphism -->
+    <color name="glass_white">#D9FFFFFF</color>
+    <color name="glass_green">#80388E3C</color>
+    
+    <!-- Gradientes (puntos de inicio/fin) -->
+    <color name="gradient_green_start">#2E7D32</color>
+    <color name="gradient_green_end">#1B5E20</color>
+
+    <!-- ========================================= -->
+    <!-- ALIAS PARA COMPATIBILIDAD -->
+    <!-- ========================================= -->
+    <color name="primary">@color/primary_500</color>
+    <color name="primary_dark">@color/primary_900</color>
+    <color name="primary_light">@color/primary_400</color>
+    <color name="accent">@color/primary_700</color>
+    
+    <color name="eco_primary">@color/primary_500</color>
+    <color name="eco_primary_dark">@color/primary_900</color>
+    <color name="eco_background">@color/background_cream</color>
+    <color name="eco_border">@color/primary_200</color>
+    
+    <color name="status_healthy">@color/success_500</color>
+    <color name="status_healthy_light">@color/success_50</color>
+    <color name="status_healthy_dark">@color/success_700</color>
+    
+    <color name="status_warning">@color/warning_500</color>
+    <color name="status_warning_light">@color/warning_50</color>
+    <color name="status_warning_dark">@color/warning_700</color>
+    
+    <color name="status_critical">@color/error_500</color>
+    <color name="status_critical_light">@color/error_50</color>
+    <color name="status_critical_dark">@color/error_700</color>
+    
+    <color name="alert_critical_text">@color/error_600</color>
+    <color name="alert_warning_text">@color/warning_600</color>
+    
+    <color name="error">@color/error_500</color>
+    <color name="warning">@color/warning_500</color>
+    
+    <color name="text_dark">@color/text_primary</color>
+    <color name="text_gray">@color/text_secondary</color>
+    <color name="gray_text">@color/text_secondary</color>
+    <color name="secondary_text">@color/text_secondary</color>
+    
+    <color name="background_gray">@color/surface_secondary</color>
+    <color name="card_background">@color/surface_primary</color>
+    <color name="bg_cream">@color/background_cream</color>
+    
+    <color name="green_header">@color/primary_800</color>
+    <color name="circle_primary">@color/primary_500</color>
+    <color name="green">@color/primary_500</color>
+    
+    <color name="sensor_yellow">@color/warning_500</color>
+    <color name="sensor_red">@color/error_500</color>
+    <color name="sensor_green">@color/success_500</color>
+    <color name="sensor_orange">@color/warning_500</color>
+    
     <color name="light_blue">#BBDEFB</color>
-    <color name="light_gray">#E0E0E0</color>
-    <color name="medium_gray">#BDBDBD</color>
+    <color name="light_gray">@color/gray_200</color>
+    <color name="medium_gray">@color/gray_400</color>
     <color name="brown">#8D6E63</color>
     <color name="blue_gray">#78909C</color>
-    <color name="green">#4CAF50</color>
+    
+    <color name="status_unknown_light">@color/gray_100</color>
 </resources>
+

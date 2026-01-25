@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7F6">
+    android:background="@color/surface_tertiary">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -14,23 +14,23 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="24dp"
-            android:layout_marginTop="48dp"
+            android:layout_marginHorizontal="@dimen/spacing_xl"
+            android:layout_marginTop="@dimen/spacing_4xl"
             android:text="Mis Plantas"
-            android:textColor="#1F2937"
-            android:textSize="28sp"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/text_size_heading"
             android:textStyle="bold" />
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardSearch"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:layout_marginHorizontal="24dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@android:color/white"
+            android:layout_marginHorizontal="@dimen/spacing_xl"
+            android:layout_marginTop="@dimen/spacing_base"
+            android:layout_marginBottom="@dimen/spacing_base"
+            app:cardBackgroundColor="@color/surface_primary"
             app:cardCornerRadius="25dp"
-            app:cardElevation="4dp">
+            app:cardElevation="@dimen/elevation_sm">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -48,12 +48,12 @@
                     android:id="@+id/etSearch"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_marginStart="12dp"
+                    android:layout_marginStart="@dimen/spacing_md"
                     android:background="@null"
                     android:hint="Buscar mi planta..."
-                    android:textColor="#1F2937"
-                    android:textColorHint="#BDBDBD"
-                    android:textSize="14sp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_tertiary"
+                    android:textSize="@dimen/text_size_body"
                     android:inputType="text"
                     android:maxLines="1"
                     android:imeOptions="actionDone"/>
@@ -78,13 +78,13 @@
         android:id="@+id/fabAddPlant"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginEnd="@dimen/spacing_xl"
+        android:layout_marginBottom="@dimen/spacing_xl"
         android:src="@drawable/ic_add"
-        app:backgroundTint="#2D5A40"
-        app:elevation="6dp"
+        app:backgroundTint="@color/brand_green"
+        app:elevation="@dimen/elevation_lg"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:tint="@android:color/white" />
+        app:tint="@color/white" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

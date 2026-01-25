@@ -570,6 +570,29 @@
             }
         }
 
+        fun esAdministrador(familiaId: Long, usuarioId: Long): Boolean {
+            var esAdmin = false
+            val sql = "SELECT es_administrador FROM familia_usuario WHERE familia_id = ? AND usuario_id = ? AND activo = 1"
+            var conn: Connection? = null
+            try {
+                conn = MySqlConexion.getConexion()
+                if (conn != null) {
+                    val ps = conn.prepareStatement(sql)
+                    ps.setLong(1, familiaId)
+                    ps.setLong(2, usuarioId)
+                    val rs = ps.executeQuery()
+                    if (rs.next()) {
+                        esAdmin = rs.getBoolean("es_administrador")
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                conn?.close()
+            }
+            return esAdmin
+        }
+
         // ========== DATA CLASSES ==========
 
         data class FamiliaInfo(
