@@ -118,9 +118,19 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         viewLifecycleOwner.lifecycleScope.launch {
             // Si la API no envía datos históricos todavía, usamos los mock para no dejar el gráfico vacío
             val humidityData = if (stats != null && stats.containsKey("labels") && stats.containsKey("data")) {
-                val labels = stats["labels"] as? List<String> ?: emptyList()
-                val values = stats["data"] as? List<Double> ?: emptyList()
-                labels.zip(values.map { it.toFloat() })
+                val labels = stats["labels"] as? List<String> ?: emptyList<String>()
+                val values = stats["data"] as? List<*> ?: emptyList<Any>()
+                
+                // Conversión segura de tipos numéricos variados de JSON
+                labels.zip(values.map { item ->
+                    when(item) {
+                        is Double -> item.toFloat()
+                        is Long -> item.toFloat()
+                        is Int -> item.toFloat()
+                        is Number -> item.toFloat()
+                        else -> 50f 
+                    }
+                })
             } else {
                 generateMockHistoryData(24)
             }
@@ -163,8 +173,14 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         this.mode = LineDataSet.Mode.CUBIC_BEZIER
         this.setDrawValues(false)
         this.setDrawFilled(true)
-        this.fillColor = Color.parseColor("#10B981")
-        this.fillAlpha = 30
+        
+        // Efecto de Degradado Premium
+        val drawable = android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(Color.parseColor("#4ade80"), Color.parseColor("#004ade80"))
+        )
+        this.fillDrawable = drawable
+        this.fillAlpha = 50
     }
 
     private fun generateMockHistoryData(hours: Int): List<Pair<String, Float>> {

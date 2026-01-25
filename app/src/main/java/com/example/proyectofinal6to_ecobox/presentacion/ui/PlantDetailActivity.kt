@@ -517,8 +517,12 @@ class PlantDetailActivity : AppCompatActivity() {
         // --- LÓGICA IA LOCAL (Paridad Web Violeta) ---
         cardAIAnalysis.visibility = View.VISIBLE
         
-        val prob = if ((humedad ?: 65f) < 50) 90 else if ((humedad ?: 65f) < 65) 75 else 25
+        val isSedienta = (p.estado_salud?.lowercase()?.contains("agua") == true || 
+                          p.estado_salud?.lowercase()?.contains("sedienta") == true)
+        
+        val prob = if (isSedienta) 100 else if ((humedad ?: 65f) < 50) 90 else if ((humedad ?: 65f) < 65) 75 else 25
         val recomendacion = when {
+            isSedienta -> "ESTADO MANUAL: Se ha marcado que requiere riego inmediato"
             prob > 80 -> "Se recomienda riego ALTO en las próximas horas"
             prob > 50 -> "Se recomienda riego MODERADO pronto"
             else -> "Riego bajo en las próximas horas"
@@ -528,7 +532,7 @@ class PlantDetailActivity : AppCompatActivity() {
         tvAIPrediction.text = recomendacion
         
         val colorIA = when {
-            prob > 80 -> Color.parseColor("#DC2626") // Rojo
+            prob >= 90 -> Color.parseColor("#DC2626") // Rojo
             prob > 50 -> Color.parseColor("#D97706") // Naranja
             else -> Color.parseColor("#15803D") // Verde
         }

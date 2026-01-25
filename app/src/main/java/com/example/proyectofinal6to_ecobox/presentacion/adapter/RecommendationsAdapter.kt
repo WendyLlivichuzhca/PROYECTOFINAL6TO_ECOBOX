@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.network.RecommendationResponse
 import com.google.android.material.card.MaterialCardView
+import java.util.Locale
 
 class RecommendationsAdapter(
     private var items: List<RecommendationResponse>,
@@ -38,20 +39,33 @@ class RecommendationsAdapter(
         holder.tvTime.text = item.time_ago
 
         // Personalización según el tipo (Estilo Web Premium)
-        when (item.type) {
-            "URGENTE" -> {
+        val typeNorm = item.type.uppercase(Locale.ROOT)
+        val msgNorm = item.message.lowercase(Locale.ROOT)
+
+        when {
+            typeNorm == "URGENTE" || msgNorm.contains("urgente") || msgNorm.contains("crítico") -> {
+                holder.tvType.text = "ACCIÓN URGENTE"
+                holder.tvType.setTextColor(Color.parseColor("#DC2626"))
+                holder.cardIcon.setCardBackgroundColor(Color.parseColor("#FEE2E2"))
+                holder.ivIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#DC2626"))
+                holder.ivIcon.setImageResource(R.drawable.ic_water_drop)
+            }
+            typeNorm == "ADVERTENCIA" || msgNorm.contains("atención") || msgNorm.contains("revisa") -> {
+                holder.tvType.text = "ADVERTENCIA IA"
                 holder.tvType.setTextColor(Color.parseColor("#D97706"))
                 holder.cardIcon.setCardBackgroundColor(Color.parseColor("#FEF3C7"))
                 holder.ivIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#D97706"))
-                holder.ivIcon.setImageResource(R.drawable.ic_water_drop)
+                holder.ivIcon.setImageResource(R.drawable.ic_temp)
             }
-            "ADVERTENCIA" -> {
+            msgNorm.contains("luz") || msgNorm.contains("iluminación") -> {
+                holder.tvType.text = "OPTIMIZACIÓN LUZ"
                 holder.tvType.setTextColor(Color.parseColor("#2563EB"))
                 holder.cardIcon.setCardBackgroundColor(Color.parseColor("#DBEAFE"))
                 holder.ivIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#2563EB"))
-                holder.ivIcon.setImageResource(R.drawable.ic_temp)
+                holder.ivIcon.setImageResource(R.drawable.ic_sun)
             }
             else -> {
+                holder.tvType.text = "SUGERENCIA"
                 holder.tvType.setTextColor(Color.parseColor("#059669"))
                 holder.cardIcon.setCardBackgroundColor(Color.parseColor("#D1FAE5"))
                 holder.ivIcon.imageTintList = ColorStateList.valueOf(Color.parseColor("#059669"))

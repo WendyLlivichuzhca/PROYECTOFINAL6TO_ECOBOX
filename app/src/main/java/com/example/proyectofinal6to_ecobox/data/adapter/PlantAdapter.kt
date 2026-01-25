@@ -84,12 +84,18 @@ class PlantAdapter(
         // 4. Configuración del Badge de Estado
         val estado = item.estado.lowercase()
         val (textoEstado, colorTexto, colorBg) = when {
-            estado.contains("healthy") || estado.contains("saludable") -> 
+            estado.contains("healthy") || estado.contains("saludable") || estado.contains("excelente") -> 
                 Triple("SALUDABLE", "#047857", "#D1FAE5")
-            estado.contains("warning") || estado.contains("revisar") || estado.contains("normal") -> 
-                Triple("NORMAL", "#1D4ED8", "#DBEAFE")
-            estado.contains("critical") || estado.contains("crítico") -> 
+            
+            estado.contains("necesita_agua") || estado.contains("sedienta") -> 
+                Triple("SEDIENTA", "#D97706", "#FEF3C7")
+                
+            estado.contains("warning") || estado.contains("advertencia") || estado.contains("revisar") -> 
+                Triple("ATENCIÓN", "#1D4ED8", "#DBEAFE")
+                
+            estado.contains("critical") || estado.contains("crítico") || estado.contains("peligro") -> 
                 Triple("CRÍTICO", "#B91C1C", "#FEE2E2")
+                
             else -> Triple("NORMAL", "#1D4ED8", "#DBEAFE")
         }
 

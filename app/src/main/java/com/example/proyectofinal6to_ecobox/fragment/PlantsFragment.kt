@@ -130,38 +130,13 @@ class PlantsFragment : Fragment(R.layout.fragment_plants) {
                 if (response.isSuccessful && response.body() != null) {
                     val plantas = response.body()!!
                     
-                    // Convertir PlantResponse a PlantaConDatos
+                    // Convertir PlantResponse a PlantaConDatos directamente (Optimización total)
                     val listaParaAdapter = plantas.map { plantResponse ->
-                        // 1. Obtener mediciones reales para esta planta (asíncrono secuencial o paralelo por planta)
-                        var humReal: Float? = plantResponse.humedad_actual
-                        var tempReal: Float? = plantResponse.temperatura_actual
-                        var sensorCount = 0
-
-                        try {
-                            // Obtener sensores de esta planta
-                            val sResponse = api.getSensors("Token $token", plantResponse.id)
-                            val sensores = sResponse.body()
-                            if (sResponse.isSuccessful && !sensores.isNullOrEmpty()) {
-                                sensorCount = sensores.size
-                                
-                                // Para cada sensor, buscar su última medición
-                                for (sensor in sensores) {
-                                    val mResponse = api.getSensorMeasurements("Token $token", sensor.id)
-                                    val mediciones = mResponse.body()
-                                    if (mResponse.isSuccessful && !mediciones.isNullOrEmpty()) {
-                                        val valor = mediciones[0].valor
-                                        when (sensor.tipoSensor) {
-                                            1 -> tempReal = valor
-                                            2, 3 -> humReal = valor
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (e: Exception) {
-                            android.util.Log.e("PlantsFragment", "Error fetching sensors for plant ${plantResponse.id}")
-                        }
-
-                        // 2. Crear objeto de dominio
+                        // Usar los datos que ya vienen en el listado base
+                        val humReal = plantResponse.humedad_actual
+                        val tempReal = plantResponse.temperatura_actual
+                        
+                        // Crear objeto de dominio
                         val planta = com.example.proyectofinal6to_ecobox.data.model.Planta(
                             plantResponse.id,
                             plantResponse.nombre,
@@ -183,7 +158,7 @@ class PlantsFragment : Fragment(R.layout.fragment_plants) {
                             nivelAgua = if (plantResponse.necesita_agua == true) 25 else 85,
                             estado = plantResponse.estado_salud ?: "Normal",
                             ultimoRiego = plantResponse.ultima_medicion ?: "Sin datos",
-                            sensorCount = sensorCount,
+                            sensorCount = 0, // No necesitamos el conteo exacto en el listado para ahorrar peticiones
                             aspecto = plantResponse.aspecto
                         )
                     }
