@@ -6,32 +6,17 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.LinearLayout
-import android.widget.Spinner
-import android.widget.TextView
+import android.widget.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.adapter.ChatAdapter
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.data.model.ChatMessage
-import com.example.proyectofinal6to_ecobox.data.model.Planta
-import com.example.proyectofinal6to_ecobox.utils.AppConfig
+import com.example.proyectofinal6to_ecobox.data.network.*
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
+import retrofit2.Response
 
 class ChatbotBottomSheet : BottomSheetDialogFragment() {
 
@@ -46,7 +31,7 @@ class ChatbotBottomSheet : BottomSheetDialogFragment() {
     
     private lateinit var adapter: ChatAdapter
     private val messages = mutableListOf<ChatMessage>()
-    private var plantsList = mutableListOf<Planta>()
+    private var plantsList = mutableListOf<PlantResponse>()
     private var selectedPlantId: Long? = null
     private var userId: Long = -1
 
@@ -109,7 +94,7 @@ class ChatbotBottomSheet : BottomSheetDialogFragment() {
 
     private fun loadInitialData() {
         loadSuggestions()
-        loadPlants()
+        loadPlantsCloud()
         
         if (messages.isEmpty()) {
             addMessage(formatBotMessage(WELCOME_MESSAGE), false)
@@ -127,7 +112,7 @@ class ChatbotBottomSheet : BottomSheetDialogFragment() {
         )
         
         llSuggestions.removeAllViews()
-        for (sug in suggestions) {
+        suggestions.forEach { sug ->
             val tv = TextView(context).apply {
                 text = sug
                 setBackgroundResource(R.drawable.bg_suggestion_pill)
@@ -148,20 +133,30 @@ class ChatbotBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    private fun loadPlants() {
-        CoroutineScope(Dispatchers.IO).launch {
-            val plants = PlantaDao.obtenerPlantasPorUsuario(userId)
-            withContext(Dispatchers.Main) {
-                plantsList.clear()
-                plantsList.addAll(plants)
-                
-                val plantNames = mutableListOf("🌿 Todas las plantas")
-                plantNames.addAll(plants.map { "${it.nombre} ${getStatusEmoji(it.estado)}" })
-                
-                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, plantNames)
-                spinnerPlants.adapter = adapter
-                
-                tvStatPlants.text = "🌱 ${plants.size} plantas"
+    private fun loadPlantsCloud() {
+        val prefs = requireContext().getSharedPreferences("ecobox_prefs", Context.MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null)
+
+        if (token == null) return
+
+        lifecycleScope.launch {
+            try {
+                val response: Response<List<PlantResponse>> = RetrofitClient.instance.getChatbotPlants("Token $token")
+                if (response.isSuccessful && response.body() != null) {
+                    val plants: List<PlantResponse> = response.body()!!
+                    plantsList.clear()
+                    plantsList.addAll(plants)
+                    
+                    val plantNames = mutableListOf("🌿 Todas las plantas")
+                    plantNames.addAll(plants.map { p -> "${p.nombre} ${getStatusEmoji(p.estado_salud)}" })
+                    
+                    val adapterSp = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, plantNames)
+                    spinnerPlants.adapter = adapterSp
+                    
+                    tvStatPlants.text = "🌱 ${plants.size} plantas"
+                }
+            } catch (e: Exception) {
+                Log.e("Chatbot", "Error cargando plantas: ${e.message}")
             }
         }
     }
@@ -184,73 +179,52 @@ class ChatbotBottomSheet : BottomSheetDialogFragment() {
         tvStatStatus.text = "⚡ Procesando..."
         tvStatStatus.setTextColor(resources.getColor(R.color.status_warning))
         
-        fetchBotResponse(text)
+        fetchBotResponseCloud(text)
     }
 
-    private fun fetchBotResponse(userInput: String) {
-        CoroutineScope(Dispatchers.IO).launch {
+    private fun fetchBotResponseCloud(userInput: String) {
+        val prefs = requireContext().getSharedPreferences("ecobox_prefs", Context.MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null)
+
+        if (token == null) {
+            addMessage("❌ Error de sesión. Por favor, re-inicia sesión.", false)
+            btnSend.isEnabled = true
+            tvStatStatus.text = "⚠️ Error"
+            return
+        }
+
+        lifecycleScope.launch {
             try {
-                val prefs = requireContext().getSharedPreferences("ecobox_prefs", Context.MODE_PRIVATE)
-                val token = prefs.getString("auth_token", null)
-
-                if (token == null) {
-                    withContext(Dispatchers.Main) {
-                        addMessage("❌ Error de sesión. Por favor, re-inicia sesión.", false)
-                        btnSend.isEnabled = true
-                        tvStatStatus.text = "⚠️ Error"
-                    }
-                    return@launch
+                val requestBody: Map<String, Any> = mutableMapOf<String, Any>(
+                    "mensaje" to userInput
+                ).apply {
+                    selectedPlantId?.let { put("planta_id", it) }
                 }
-
-                val urlString = if (AppConfig.API_BASE_URL.endsWith("/")) "${AppConfig.API_BASE_URL}chatbot/" 
-                               else "${AppConfig.API_BASE_URL}/chatbot/"
                 
-                val conn = URL(urlString).openConnection() as HttpURLConnection
-                conn.requestMethod = "POST"
-                conn.setRequestProperty("Content-Type", "application/json")
-                // IMPORTANTE: Para TokenAuthentication de DRF, el formato es "Token <key>"
-                conn.setRequestProperty("Authorization", "Token $token")
-                conn.doOutput = true
+                val response = RetrofitClient.instance.postChatbotMessage("Token $token", requestBody)
 
-                val body = JSONObject().apply {
-                    put("mensaje", userInput)
-                    put("planta_id", selectedPlantId)
-                }
-
-                OutputStreamWriter(conn.outputStream).use { it.write(body.toString()) }
-
-                if (conn.responseCode == HttpURLConnection.HTTP_OK) {
-                    val response = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
-                    val json = JSONObject(response)
-                    if (json.getBoolean("success")) {
-                        val botMsg = formatBotMessage(json.getJSONObject("respuesta").getString("mensaje"))
-                        withContext(Dispatchers.Main) { addMessage(botMsg, false) }
-                    }
-                } else {
-                    val errorStatus = conn.responseCode
-                    Log.e("ChatbotAPI", "Error del servidor: $errorStatus")
-                    withContext(Dispatchers.Main) { 
-                        if (errorStatus == 401 || errorStatus == 403) {
-                            addMessage("🤖 Tu sesión ha expirado o no tienes acceso. Por favor, re-inicia sesión.", false)
-                        } else {
-                            addMessage("🤖 Ups, EcoBot está tomando una siesta ($errorStatus). Inténtalo de nuevo en un momento.", false)
-                        }
-                    }
-                }
-
-                withContext(Dispatchers.Main) {
-                    btnSend.isEnabled = true
+                if (response.isSuccessful && response.body() != null) {
+                    val botMsg = formatBotMessage(response.body()!!.respuesta.mensaje)
+                    addMessage(botMsg, false)
                     tvStatStatus.text = "✅ Listo"
                     tvStatStatus.setTextColor(resources.getColor(R.color.status_healthy))
+                } else {
+                    val errorStatus = response.code()
+                    Log.e("ChatbotAPI", "Error del servidor: $errorStatus")
+                    if (errorStatus == 401 || errorStatus == 403) {
+                        addMessage("🤖 Tu sesión ha expirado o no tienes acceso. Por favor, re-inicia sesión.", false)
+                    } else {
+                        addMessage("🤖 Ups, EcoBot está tomando una siesta ($errorStatus). Inténtalo de nuevo en un momento.", false)
+                    }
+                    tvStatStatus.text = "⚠️ Error"
                 }
             } catch (e: Exception) {
-                Log.e("ChatbotAPI", "Error de red: ${e.message}", e)
-                withContext(Dispatchers.Main) {
-                    addMessage("❌ No tengo conexión con el jardín. Verifica tu internet.", false)
-                    btnSend.isEnabled = true
-                    tvStatStatus.text = "⚠️ Error"
-                    tvStatStatus.setTextColor(resources.getColor(R.color.status_critical))
-                }
+                Log.e("ChatbotAPI", "Error de red: ${e.message}")
+                addMessage("❌ No tengo conexión con el jardín. Verifica tu internet.", false)
+                tvStatStatus.text = "⚠️ Error"
+                tvStatStatus.setTextColor(resources.getColor(R.color.status_critical))
+            } finally {
+                btnSend.isEnabled = true
             }
         }
     }

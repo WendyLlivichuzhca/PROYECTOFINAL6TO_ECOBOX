@@ -11,14 +11,9 @@ import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
-import com.example.proyectofinal6to_ecobox.data.model.Recommendation
 import androidx.lifecycle.lifecycleScope
 import com.example.proyectofinal6to_ecobox.presentacion.adapter.RecommendationsAdapter
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class RecommendationsActivity : AppCompatActivity() {
 
@@ -68,7 +63,8 @@ class RecommendationsActivity : AppCompatActivity() {
                 val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance.getRecommendations("Token $token")
                 
                 if (response.isSuccessful && response.body() != null) {
-                    val recommendations = response.body()!!
+                    val body = response.body()!!
+                    val recommendations = body.recommendations
                     
                     if (recommendations.isEmpty()) {
                         emptyState.visibility = View.VISIBLE
@@ -79,7 +75,7 @@ class RecommendationsActivity : AppCompatActivity() {
                         rvRecommendations.visibility = View.VISIBLE
                         adapter.updateItems(recommendations)
                         
-                        val urgentes = recommendations.count { it.type == "URGENTE" }
+                        val urgentes = body.urgentes
                         tvAiSummary.text = if (urgentes > 0) {
                             "Atención: Tienes $urgentes acciones críticas pendientes."
                         } else {

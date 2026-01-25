@@ -10,12 +10,14 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.launch
+import com.example.proyectofinal6to_ecobox.data.network.*
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.adapter.PlantAdapter
 import com.example.proyectofinal6to_ecobox.data.adapter.PlantAdapter.PlantaConDatos
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.presentacion.ui.CrearPlantaActivity
 import com.example.proyectofinal6to_ecobox.presentacion.ui.PlantDetailActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -82,8 +84,8 @@ class PlantsFragment : Fragment(R.layout.fragment_plants) {
         val rvPlants = view.findViewById<RecyclerView>(R.id.rvPlants)
         etSearch = view.findViewById(R.id.etSearch)
 
-        // Configurar RecyclerView - CAMBIA ESTAS LÍNEAS:
-        rvPlants.layoutManager = LinearLayoutManager(requireContext())
+        // Configurar RecyclerView (Grid de 2 columnas estilo Web)
+        rvPlants.layoutManager = androidx.recyclerview.widget.GridLayoutManager(requireContext(), 2)
         adapter = PlantAdapter(emptyList()) { planta, datos ->
             // ANTES: startActivity(intent)
             // DESPUÉS: plantDetailLauncher.launch(intent)
@@ -111,32 +113,90 @@ class PlantsFragment : Fragment(R.layout.fragment_plants) {
     }
 
     private fun cargarPlantas(userId: Long) {
-        Thread {
-            try {
-                val plantasCompletas = PlantaDao.obtenerPlantasCompletas(userId)
-                val listaParaAdapter = plantasCompletas.map { pc ->
-                    // NUEVO: Obtener número de sensores para cada planta
-                    val sensorCount = PlantaDao.obtenerCantidadSensoresPorPlanta(pc.planta.id)
-                    PlantaConDatos(
-                        planta = pc.planta,
-                        ubicacion = pc.ubicacion,
-                        humedadSuelo = pc.humedad,
-                        temperatura = pc.temperatura,
-                        luz = pc.luz,
-                        nivelAgua = pc.calcularNivelAgua(),
-                        estado = pc.determinarEstadoUI(),
-                        ultimoRiego = pc.ultimoRiego,
-                        sensorCount = sensorCount
+        val prefs = requireContext().getSharedPreferences("ecobox_prefs", Context.MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null)
+        
+        if (token == null) {
+            Toast.makeText(requireContext(), "Error de sesión", Toast.LENGTH_SHORT).show()
+            return
+        }
 
-                    )
-                }
-                activity?.runOnUiThread {
+        // Usar coroutines en lugar de Thread
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val api = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                val response = api.getMyPlants("Token $token")
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val plantas = response.body()!!
+                    
+                    // Convertir PlantResponse a PlantaConDatos
+                    val listaParaAdapter = plantas.map { plantResponse ->
+                        // 1. Obtener mediciones reales para esta planta (asíncrono secuencial o paralelo por planta)
+                        var humReal: Float? = plantResponse.humedad_actual
+                        var tempReal: Float? = plantResponse.temperatura_actual
+                        var sensorCount = 0
+
+                        try {
+                            // Obtener sensores de esta planta
+                            val sResponse = api.getSensors("Token $token", plantResponse.id)
+                            val sensores = sResponse.body()
+                            if (sResponse.isSuccessful && !sensores.isNullOrEmpty()) {
+                                sensorCount = sensores.size
+                                
+                                // Para cada sensor, buscar su última medición
+                                for (sensor in sensores) {
+                                    val mResponse = api.getSensorMeasurements("Token $token", sensor.id)
+                                    val mediciones = mResponse.body()
+                                    if (mResponse.isSuccessful && !mediciones.isNullOrEmpty()) {
+                                        val valor = mediciones[0].valor
+                                        when (sensor.tipoSensor) {
+                                            1 -> tempReal = valor
+                                            2, 3 -> humReal = valor
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("PlantsFragment", "Error fetching sensors for plant ${plantResponse.id}")
+                        }
+
+                        // 2. Crear objeto de dominio
+                        val planta = com.example.proyectofinal6to_ecobox.data.model.Planta(
+                            plantResponse.id,
+                            plantResponse.nombre,
+                            plantResponse.especie ?: "",
+                            plantResponse.fecha_plantacion ?: "",
+                            plantResponse.descripcion ?: "",
+                            plantResponse.familia
+                        ).apply {
+                            setFoto(plantResponse.imagen_url ?: "")
+                            setEstado(plantResponse.estado_salud ?: "Normal")
+                        }
+                        
+                        PlantaConDatos(
+                            planta = planta,
+                            ubicacion = plantResponse.familia_nombre ?: "Sin ubicación",
+                            humedadSuelo = humReal,
+                            temperatura = tempReal,
+                            luz = 0f,
+                            nivelAgua = if (plantResponse.necesita_agua == true) 25 else 85,
+                            estado = plantResponse.estado_salud ?: "Normal",
+                            ultimoRiego = plantResponse.ultima_medicion ?: "Sin datos",
+                            sensorCount = sensorCount,
+                            aspecto = plantResponse.aspecto
+                        )
+                    }
+                    
                     adapter.updateList(listaParaAdapter)
+                } else {
+                    Toast.makeText(requireContext(), "Error cargando plantas", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-        }.start()
+        }
     }
 
     override fun onResume() {

@@ -7,7 +7,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
+import com.example.proyectofinal6to_ecobox.data.network.*
 import com.example.proyectofinal6to_ecobox.presentacion.ui.AlertsActivity
 import com.example.proyectofinal6to_ecobox.presentacion.ui.ChatbotBottomSheet
 import com.github.mikephil.charting.charts.LineChart
@@ -24,6 +24,7 @@ import java.util.Date
 import java.util.Locale
 
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.launch
 
 class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
@@ -54,11 +55,20 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         val btnAlerts = view.findViewById<View>(R.id.btnAlerts)
         val cardAlertCritical = view.findViewById<View>(R.id.cardAlertCritical)
 
-        val goToAlerts = View.OnClickListener {
+        // Campana -> Notificaciones de Usuario (Activity rediseñada)
+        btnAlerts.setOnClickListener {
             startActivity(Intent(requireContext(), AlertsActivity::class.java))
         }
-        btnAlerts.setOnClickListener(goToAlerts)
-        cardAlertCritical.setOnClickListener(goToAlerts)
+
+        // Tarjeta Roja -> Alertas de Plantas (Fragment específico)
+        cardAlertCritical.setOnClickListener {
+            try {
+                findNavController().navigate(R.id.nav_alerts)
+            } catch (e: Exception) {
+                // Fallback si la navegación falla
+                startActivity(Intent(requireContext(), AlertsActivity::class.java))
+            }
+        }
 
         // FAB Chatbot
         val fabChatbot = view.findViewById<View>(R.id.fabChatbot)
@@ -77,7 +87,7 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         val chartDashboard = view.findViewById<LineChart>(R.id.chartDashboard)
         if (chartDashboard != null) {
             setupChart(chartDashboard)
-            loadChartData(chartDashboard, userId)
+            loadChartData(chartDashboard, null)
         }
     }
 
@@ -104,43 +114,57 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
         leftAxis.axisMaximum = 100f
     }
 
-    private fun loadChartData(chart: LineChart, userId: Long) {
-        Thread {
-            val humidityData = generateMockHistoryData(24)
-            
-            activity?.runOnUiThread {
-                val entries = mutableListOf<Entry>()
-                val labels = mutableListOf<String>()
-
-                humidityData.forEachIndexed { index, pair ->
-                    entries.add(Entry(index.toFloat(), pair.second))
-                    labels.add(pair.first)
-                }
-
-                chart.xAxis.valueFormatter = object : ValueFormatter() {
-                    override fun getFormattedValue(value: Float): String {
-                        val index = value.toInt()
-                        return if (index >= 0 && index < labels.size) labels[index] else ""
-                    }
-                }
-
-                val dataSet = LineDataSet(entries, "Humedad Promedio")
-                dataSet.color = Color.parseColor("#10B981")
-                dataSet.lineWidth = 3f
-                dataSet.setCircleColor(Color.parseColor("#10B981"))
-                dataSet.circleRadius = 4f
-                dataSet.setDrawCircleHole(true)
-                dataSet.circleHoleColor = Color.WHITE
-                dataSet.mode = LineDataSet.Mode.CUBIC_BEZIER
-                dataSet.setDrawValues(false)
-                dataSet.setDrawFilled(true)
-                dataSet.fillColor = Color.parseColor("#10B981")
-                dataSet.fillAlpha = 30
-
-                chart.data = LineData(dataSet)
-                chart.animateX(1000)
+    private fun loadChartData(chart: LineChart, stats: Map<String, Any>?) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            // Si la API no envía datos históricos todavía, usamos los mock para no dejar el gráfico vacío
+            val humidityData = if (stats != null && stats.containsKey("labels") && stats.containsKey("data")) {
+                val labels = stats["labels"] as? List<String> ?: emptyList()
+                val values = stats["data"] as? List<Double> ?: emptyList()
+                labels.zip(values.map { it.toFloat() })
+            } else {
+                generateMockHistoryData(24)
             }
-        }.start()
+            
+            val entries = mutableListOf<Entry>()
+            val labels = mutableListOf<String>()
+
+            humidityData.forEachIndexed { index, pair ->
+                entries.add(Entry(index.toFloat(), pair.second))
+                labels.add(pair.first)
+            }
+
+            chart.standardConfig(labels)
+            
+            val dataSet = LineDataSet(entries, "Humedad Promedio")
+            dataSet.setupAppearance()
+
+            chart.data = LineData(dataSet)
+            chart.animateX(1000)
+        }
+    }
+
+    // Funciones de extensión para limpiar el código del gráfico
+    private fun LineChart.standardConfig(labels: List<String>) {
+        this.xAxis.valueFormatter = object : ValueFormatter() {
+            override fun getFormattedValue(value: Float): String {
+                val index = value.toInt()
+                return if (index >= 0 && index < labels.size) labels[index] else ""
+            }
+        }
+    }
+
+    private fun LineDataSet.setupAppearance() {
+        this.color = Color.parseColor("#10B981")
+        this.lineWidth = 3f
+        this.setCircleColor(Color.parseColor("#10B981"))
+        this.circleRadius = 4f
+        this.setDrawCircleHole(true)
+        this.circleHoleColor = Color.WHITE
+        this.mode = LineDataSet.Mode.CUBIC_BEZIER
+        this.setDrawValues(false)
+        this.setDrawFilled(true)
+        this.fillColor = Color.parseColor("#10B981")
+        this.fillAlpha = 30
     }
 
     private fun generateMockHistoryData(hours: Int): List<Pair<String, Float>> {
@@ -193,6 +217,12 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
                         "La IA detecta estrés hídrico. Revisa las recomendaciones." 
                         else "Análisis completado: El ecosistema está en equilibrio óptimo."
                     view.findViewById<TextView>(R.id.tvAiRecommendation)?.text = recomendacion
+
+                    // 3. Actualizar Gráfico si hay datos
+                    val chartDashboard = view.findViewById<LineChart>(R.id.chartDashboard)
+                    if (chartDashboard != null) {
+                        loadChartData(chartDashboard, data.estadisticas_semana)
+                    }
 
                 }
             } catch (e: Exception) {

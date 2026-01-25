@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.lifecycleScope
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.google.android.material.button.MaterialButton
@@ -107,27 +108,60 @@ class SensoresActivity : AppCompatActivity() {
     }
 
     private fun loadSensores() {
+        val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null)
+
+        if (token == null) {
+            mostrarError("Sesión expirada")
+            return
+        }
+
         showLoading(true)
 
-        CoroutineScope(Dispatchers.IO).launch {
+        lifecycleScope.launch {
             try {
-                val sensoresVista = PlantaDao.obtenerSensoresDetalladosParaVista(plantaId)
-                Log.d("SensoresActivity", "Sensores obtenidos: ${sensoresVista.size}")
+                val api = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                
+                // 1. Obtener sensores, tipos y estados en paralelo (o secuencial para simplicidad inicial)
+                val sensorsResponse = api.getSensors("Token $token", plantaId)
+                val typesResponse = api.getSensorTypes("Token $token")
+                
+                if (sensorsResponse.isSuccessful && typesResponse.isSuccessful) {
+                    val sensors = sensorsResponse.body() ?: emptyList()
+                    val types = typesResponse.body() ?: emptyList()
+                    val typesMap = types.associateBy { it.id }
 
-                withContext(Dispatchers.Main) {
+                    // 2. Transformar a SensorVista para mantener compatibilidad con el adapter
+                    val sensoresVista = sensors.map { s ->
+                        val type = typesMap[s.tipoSensor]
+                        PlantaDao.SensorVista(
+                            id = s.id,
+                            nombre = s.nombre,
+                            ubicacion = s.ubicacion ?: "Sin ubicación",
+                            tipoSensor = type?.nombre ?: "Desconocido",
+                            unidadMedida = type?.unidadMedida ?: "",
+                            estado = if (s.activo) "Activo" else "Inactivo",
+                            valor = null, // El valor se cargará dinámicamente o desde mediciones
+                            ultimaLectura = null,
+                            activo = s.activo,
+                            plantaNombre = plantaNombre
+                        )
+                    }
+
                     showLoading(false)
                     if (sensoresVista.isEmpty()) {
                         showEmptyState()
                     } else {
                         mostrarSensores(sensoresVista)
                     }
+                } else {
+                    showLoading(false)
+                    mostrarError("Error al sincronizar con el servidor")
                 }
             } catch (e: Exception) {
-                Log.e("SensoresActivity", "Error al cargar sensores: ${e.message}", e)
-                withContext(Dispatchers.Main) {
-                    showLoading(false)
-                    mostrarError("Error al cargar sensores: ${e.message}")
-                }
+                Log.e("SensoresActivity", "Error al cargar sensores Cloud: ${e.message}", e)
+                showLoading(false)
+                mostrarError("Error de red: ${e.message}")
             }
         }
     }

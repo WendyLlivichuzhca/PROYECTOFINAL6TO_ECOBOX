@@ -8,10 +8,10 @@ import android.util.Log
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.FamiliaDao
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.data.model.Planta
+import com.example.proyectofinal6to_ecobox.data.network.*
 import com.example.proyectofinal6to_ecobox.data.model.PlantTemplate
 import com.example.proyectofinal6to_ecobox.utils.AppConfig
 import com.example.proyectofinal6to_ecobox.utils.ImageUtils
@@ -24,9 +24,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.DataOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
 class CrearPlantaActivity : AppCompatActivity() {
@@ -256,15 +258,8 @@ class CrearPlantaActivity : AppCompatActivity() {
             openImagePicker()
         }
 
-        // Configurar AutoCompleteTextView para familias
-        etPlantFamily.setOnItemClickListener { parent, _, position, _ ->
-            val familiaSeleccionada = parent.getItemAtPosition(position) as FamiliaDao.FamiliaSimple
-            familiaIdSeleccionada = familiaSeleccionada.id
-            Log.d(
-                "CrearPlanta",
-                "Familia seleccionada: ${familiaSeleccionada.nombre} (ID: ${familiaSeleccionada.id})"
-            )
-        }
+
+
 
         // Botón guardar planta
         btnSavePlant.setOnClickListener {
@@ -273,18 +268,35 @@ class CrearPlantaActivity : AppCompatActivity() {
     }
 
     private fun cargarFamiliasUsuario() {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val familias = FamiliaDao.obtenerFamiliasSimplesPorUsuario(userId)
+        val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null)
 
-                withContext(Dispatchers.Main) {
+        if (token == null) return
+
+        lifecycleScope.launch {
+            try {
+                val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                    .getFamilies("Token $token")
+
+                if (response.isSuccessful && response.body() != null) {
+                    val familias = response.body()!!
+                    
                     if (familias.isNotEmpty()) {
+                        // Crear una lista de nombres para el adapter
+                        val nombresFamilias = familias.map { it.nombre }
                         val adapter = ArrayAdapter(
                             this@CrearPlantaActivity,
                             android.R.layout.simple_dropdown_item_1line,
-                            familias
+                            nombresFamilias
                         )
                         etPlantFamily.setAdapter(adapter)
+
+                        etPlantFamily.setOnItemClickListener { parent, _, position, _ ->
+                            val nombreSeleccionado = parent.getItemAtPosition(position) as String
+                            val familia = familias.find { it.nombre == nombreSeleccionado }
+                            familiaIdSeleccionada = familia?.id ?: -1L
+                            Log.d("CrearPlanta", "Familia seleccionada: $nombreSeleccionado (ID: $familiaIdSeleccionada)")
+                        }
 
                         // Seleccionar la primera familia por defecto
                         val primeraFamilia = familias[0]
@@ -304,13 +316,7 @@ class CrearPlantaActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 Log.e("CrearPlanta", "Error cargando familias: ${e.message}")
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        this@CrearPlantaActivity,
-                        "Error cargando familias",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+                Toast.makeText(this@CrearPlantaActivity, "Error cargando familias", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -397,10 +403,13 @@ class CrearPlantaActivity : AppCompatActivity() {
         btnSavePlant.isEnabled = false
         btnSavePlant.text = "Creando..."
 
-        CoroutineScope(Dispatchers.IO).launch {
+        val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null) ?: ""
+
+        lifecycleScope.launch {
             try {
-                // Subir imagen al backend y crear planta usando la API de Django
-                val exito = crearPlantaEnBackend(
+                val success = crearPlantaEnBackend(
+                    token = token,
                     nombrePlanta = nombrePlanta,
                     especie = especie,
                     descripcion = descripcion,
@@ -409,45 +418,25 @@ class CrearPlantaActivity : AppCompatActivity() {
                     aspecto = aspecto,
                     fotoPath = foto
                 )
-                
-                Log.d("CrearPlanta", "Resultado creación en backend: $exito")
 
-                withContext(Dispatchers.Main) {
-                    btnSavePlant.isEnabled = true
-                    btnSavePlant.text = "Crear Planta"
+                btnSavePlant.isEnabled = true
+                btnSavePlant.text = "Crear Planta"
 
-                    if (exito) {
-                        Toast.makeText(
-                            this@CrearPlantaActivity,
-                            "¡Planta creada exitosamente!",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        val resultIntent = Intent().apply {
-                            putExtra("PLANTA_CREADA", true)
-                        }
-                        setResult(Activity.RESULT_OK, resultIntent)
-                        finish()
-                    } else {
-                        Toast.makeText(
-                            this@CrearPlantaActivity,
-                            "Error al crear la planta. Intenta nuevamente.",
-                            Toast.LENGTH_LONG
-                        ).show()
+                if (success) {
+                    Toast.makeText(this@CrearPlantaActivity, "¡Planta creada exitosamente!", Toast.LENGTH_SHORT).show()
+                    val resultIntent = Intent().apply {
+                        putExtra("PLANTA_CREADA", true)
                     }
+                    setResult(Activity.RESULT_OK, resultIntent)
+                    finish()
+                } else {
+                    Toast.makeText(this@CrearPlantaActivity, "Error al crear la planta", Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
                 Log.e("CrearPlanta", "Error creando planta: ${e.message}", e)
-
-                withContext(Dispatchers.Main) {
-                    btnSavePlant.isEnabled = true
-                    btnSavePlant.text = "Crear Planta"
-
-                    Toast.makeText(
-                        this@CrearPlantaActivity,
-                        "Error: ${e.message ?: "Error desconocido"}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+                btnSavePlant.isEnabled = true
+                btnSavePlant.text = "Crear Planta"
+                Toast.makeText(this@CrearPlantaActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -456,7 +445,8 @@ class CrearPlantaActivity : AppCompatActivity() {
      * Crea una planta en el backend usando la API de Django
      * Sube la imagen si existe y retorna true si fue exitoso
      */
-    private fun crearPlantaEnBackend(
+    private suspend fun crearPlantaEnBackend(
+        token: String,
         nombrePlanta: String,
         especie: String,
         descripcion: String,
@@ -466,75 +456,36 @@ class CrearPlantaActivity : AppCompatActivity() {
         fotoPath: String?
     ): Boolean {
         return try {
-            val url = URL("${AppConfig.API_BASE_URL}plantas/")
-            val boundary = "----WebKitFormBoundary" + System.currentTimeMillis()
+            val partMap = mutableMapOf<String, RequestBody>()
             
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "POST"
-            connection.doOutput = true
-            connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
-            
-            // --- NUEVO: Obtener y enviar el token de Django ---
-            val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
-            val token = prefs.getString("auth_token", null)
-            
-            if (token != null) {
-                connection.setRequestProperty("Authorization", "Token $token")
-                Log.d("CrearPlanta", "Token de Django enviado: Token $token")
-            } else {
-                Log.w("CrearPlanta", "⚠️ No se encontró token de Django - la petición podría fallar")
+            fun addPart(key: String, value: String) {
+                partMap[key] = value.toRequestBody("text/plain".toMediaTypeOrNull())
             }
-            
-            val outputStream = DataOutputStream(connection.outputStream)
-            
-            // Agregar campos de texto
-            fun writeField(name: String, value: String) {
-                outputStream.writeBytes("--$boundary\r\n")
-                outputStream.writeBytes("Content-Disposition: form-data; name=\"$name\"\r\n\r\n")
-                outputStream.writeBytes("$value\r\n")
-            }
-            
-            writeField("nombrePersonalizado", nombrePlanta)
-            writeField("especie", especie)
-            writeField("descripcion", descripcion)
-            writeField("familia", familiaId.toString())
-            writeField("estado", estado)
-            writeField("aspecto", aspecto)
-            
-            // Agregar imagen si existe
-            if (!fotoPath.isNullOrEmpty()) {
+
+            addPart("nombrePersonalizado", nombrePlanta)
+            addPart("especie", especie)
+            addPart("descripcion", descripcion)
+            addPart("familia", familiaId.toString())
+            addPart("estado", estado)
+            addPart("aspecto", aspecto)
+
+            val imagePart = if (!fotoPath.isNullOrEmpty()) {
                 val file = File(fotoPath)
                 if (file.exists()) {
-                    outputStream.writeBytes("--$boundary\r\n")
-                    outputStream.writeBytes("Content-Disposition: form-data; name=\"foto\"; filename=\"${file.name}\"\r\n")
-                    outputStream.writeBytes("Content-Type: image/jpeg\r\n\r\n")
-                    
-                    file.inputStream().use { input ->
-                        input.copyTo(outputStream)
-                    }
-                    outputStream.writeBytes("\r\n")
-                    Log.d("CrearPlanta", "Imagen adjuntada: ${file.name}, tamaño: ${file.length()} bytes")
-                }
+                    val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                    MultipartBody.Part.createFormData("foto", file.name, requestFile)
+                } else null
+            } else null
+
+            val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                .createPlant("Token $token", partMap, imagePart)
+
+            if (!response.isSuccessful) {
+                val errorMsg = response.errorBody()?.string()
+                Log.e("CrearPlanta", "Error en creación: $errorMsg")
             }
-            
-            // Finalizar multipart
-            outputStream.writeBytes("--$boundary--\r\n")
-            outputStream.flush()
-            outputStream.close()
-            
-            // Leer respuesta
-            val responseCode = connection.responseCode
-            Log.d("CrearPlanta", "Código de respuesta del backend: $responseCode")
-            
-            if (responseCode == HttpURLConnection.HTTP_CREATED || responseCode == HttpURLConnection.HTTP_OK) {
-                val response = connection.inputStream.bufferedReader().use { it.readText() }
-                Log.d("CrearPlanta", "Respuesta del backend: $response")
-                true
-            } else {
-                val errorResponse = connection.errorStream?.bufferedReader()?.use { it.readText() }
-                Log.e("CrearPlanta", "Error del backend: $errorResponse")
-                false
-            }
+
+            response.isSuccessful
         } catch (e: Exception) {
             Log.e("CrearPlanta", "Error en crearPlantaEnBackend: ${e.message}", e)
             false

@@ -3,19 +3,27 @@ package com.example.proyectofinal6to_ecobox.presentacion.ui
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.data.model.Planta
+import com.example.proyectofinal6to_ecobox.data.network.*
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.example.proyectofinal6to_ecobox.utils.ImageUtils
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.Executors
@@ -286,38 +294,90 @@ class EditarPlantaActivity : AppCompatActivity() {
     }
 
     private fun actualizarPlantaEnBD(planta: Planta, userId: Long) {
-        executor.execute {
+        val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null) ?: ""
+
+        if (token.isEmpty()) {
+            Toast.makeText(this, "Sesión expirada", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
             try {
-                val actualizado = PlantaDao.actualizarPlanta(planta, userId)
+                val partMap = mutableMapOf<String, RequestBody>()
+                
+                fun addPart(key: String, value: String) {
+                    partMap[key] = value.toRequestBody("text/plain".toMediaTypeOrNull())
+                }
 
-                runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    btnSaveChanges.isEnabled = true
-                    btnCancel.isEnabled = true
+                val estadoCapturado = autoEstado.text.toString().trim()
+                val estadoMapeado = when (estadoCapturado) {
+                    "Saludable" -> "saludable"
+                    "Necesita agua" -> "necesita_agua"
+                    "Advertencia" -> "advertencia"
+                    "Crítico" -> "critico"
+                    "Normal" -> "normal"
+                    else -> estadoCapturado.lowercase()
+                }
 
-                    if (actualizado) {
-                        val resultIntent = Intent()
-                        resultIntent.putExtra("UPDATED_NAME", planta.nombre)
-                        resultIntent.putExtra("UPDATED_LOCATION", planta.ubicacion)
-                        resultIntent.putExtra("UPDATED_PHOTO", planta.foto)
-                        resultIntent.putExtra("UPDATED_DESCRIPTION", planta.descripcion)
-                        resultIntent.putExtra("UPDATED_SPECIES", planta.especie)
-                        setResult(RESULT_OK, resultIntent)
+                val aspectoCapturado = autoAspecto.text.toString().trim()
+                val aspectoMapeado = when (aspectoCapturado) {
+                    "Normal" -> "normal"
+                    "Floreciendo" -> "floreciendo"
+                    "Con frutos" -> "con_frutos"
+                    "Marchito", "Algo marchita" -> "algo_marchita"
+                    "Enfermo", "Enferma" -> "enferma"
+                    "Con hojas nuevas" -> "hojas_nuevas"
+                    "En crecimiento" -> "en_crecimiento"
+                    else -> aspectoCapturado.lowercase()
+                }
 
-                        Toast.makeText(this, "✓ Planta actualizada exitosamente", Toast.LENGTH_SHORT).show()
-                        finish()
-                    } else {
-                        Toast.makeText(this, "✗ Error al actualizar la planta", Toast.LENGTH_SHORT).show()
-                    }
+                addPart("nombrePersonalizado", planta.nombre)
+                addPart("especie", planta.especie ?: "")
+                addPart("descripcion", planta.descripcion ?: "")
+                addPart("familia", planta.familiaId.toString())
+                addPart("estado", estadoMapeado)
+                addPart("aspecto", aspectoMapeado)
+
+                val imagePart = if (nuevaFotoPath != null) {
+                    val file = File(nuevaFotoPath!!)
+                    if (file.exists()) {
+                        val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                        MultipartBody.Part.createFormData("foto", file.name, requestFile)
+                    } else null
+                } else null
+
+                val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                    .updatePlant("Token $token", planta.id, partMap, imagePart)
+
+                progressBar.visibility = View.GONE
+                btnSaveChanges.isEnabled = true
+                btnCancel.isEnabled = true
+
+                if (response.isSuccessful) {
+                    val p = response.body()!!
+                    val resultIntent = Intent()
+                    resultIntent.putExtra("UPDATED_NAME", p.nombre)
+                    resultIntent.putExtra("UPDATED_LOCATION", p.familia_nombre)
+                    resultIntent.putExtra("UPDATED_PHOTO", p.imagen_url)
+                    resultIntent.putExtra("UPDATED_DESCRIPTION", p.descripcion)
+                    resultIntent.putExtra("UPDATED_SPECIES", p.especie)
+                    resultIntent.putExtra("PLANTA_EDITADA", true)
+                    setResult(RESULT_OK, resultIntent)
+
+                    Toast.makeText(this@EditarPlantaActivity, "✓ Planta actualizada exitosamente", Toast.LENGTH_SHORT).show()
+                    finish()
+                } else {
+                    val errorMsg = response.errorBody()?.string()
+                    Log.e("EditarPlanta", "Error en actualización: $errorMsg")
+                    Toast.makeText(this@EditarPlantaActivity, "✗ Error al actualizar la planta", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
-                runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    btnSaveChanges.isEnabled = true
-                    btnCancel.isEnabled = true
-                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+                Log.e("EditarPlanta", "Error: ${e.message}", e)
+                progressBar.visibility = View.GONE
+                btnSaveChanges.isEnabled = true
+                btnCancel.isEnabled = true
+                Toast.makeText(this@EditarPlantaActivity, "Error de red: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }

@@ -1,30 +1,32 @@
 package com.example.proyectofinal6to_ecobox.data.adapter
 
-import android.content.Context
 import android.content.res.ColorStateList
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.model.Notificacion
+import com.example.proyectofinal6to_ecobox.data.network.UserNotificationResponse
+import com.google.android.material.button.MaterialButton
+import java.text.SimpleDateFormat
+import java.util.*
 
 class NotificacionesAdapter(
-    private var lista: List<Notificacion>,
-    private val onNotificacionClick: (Notificacion) -> Unit = {}
+    private var lista: List<UserNotificationResponse>,
+    private val onMarcarLeidaClick: (UserNotificationResponse) -> Unit
 ) : RecyclerView.Adapter<NotificacionesAdapter.NotificacionViewHolder>() {
 
     class NotificacionViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        // IDs actualizados según el nuevo item_alert.xml
-        val indicator: View = view.findViewById(R.id.viewSeverityIndicator) // La barra lateral
-        val titulo: TextView = view.findViewById(R.id.txtTitulo)
-        val mensaje: TextView = view.findViewById(R.id.txtMensaje)
-        val hora: TextView = view.findViewById(R.id.txtHora)
-        val icono: ImageView = view.findViewById(R.id.imgIcono)
+        val imgIcono: ImageView = view.findViewById(R.id.imgIcono)
+        val txtTipoBadge: TextView = view.findViewById(R.id.txtTipoBadge)
+        val txtHora: TextView = view.findViewById(R.id.txtHora)
+        val txtMensaje: TextView = view.findViewById(R.id.txtMensaje)
+        val txtRelativeTime: TextView = view.findViewById(R.id.txtRelativeTime)
         val badgeNoLeido: View = view.findViewById(R.id.badgeNoLeido)
+        val btnMarcarLeida: MaterialButton = view.findViewById(R.id.btnMarcarLeidaItem)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NotificacionViewHolder {
@@ -34,70 +36,78 @@ class NotificacionesAdapter(
 
     override fun onBindViewHolder(holder: NotificacionViewHolder, position: Int) {
         val item = lista[position]
-        val context = holder.itemView.context
 
-        holder.titulo.text = item.titulo
-        holder.mensaje.text = item.mensaje
-        holder.hora.text = item.fecha
+        holder.txtMensaje.text = item.mensaje
+        holder.txtHora.text = formatFecha(item.fechaCreacion)
+        holder.txtRelativeTime.text = getRelativeTime(item.fechaCreacion)
 
-        // Visibilidad del punto rojo
-        holder.badgeNoLeido.visibility = if (!item.isLeida()) View.VISIBLE else View.GONE
-
-        // Configurar click
-        holder.itemView.setOnClickListener {
-            onNotificacionClick(item)
+        // Estado de lectura
+        if (item.leida) {
+            holder.badgeNoLeido.visibility = View.GONE
+            holder.btnMarcarLeida.visibility = View.GONE
+            holder.itemView.alpha = 0.7f
+        } else {
+            holder.badgeNoLeido.visibility = View.VISIBLE
+            holder.btnMarcarLeida.visibility = View.VISIBLE
+            holder.itemView.alpha = 1.0f
         }
 
-        // Lógica de Estilos (Colores Modernos)
-        val tituloLower = item.titulo.lowercase()
-
-        when {
-            // CRÍTICO (Rojo)
-            tituloLower.contains("crítico") ||
-                    tituloLower.contains("urgente") ||
-                    tituloLower.contains("peligro") -> {
-                aplicarEstilo(holder, context, R.color.alert_critical_text, R.drawable.ic_alert_critical)
+        // Estilo por tipo
+        when (item.tipo.uppercase()) {
+            "WARNING", "ALERTA" -> {
+                applyTypeStyle(holder, "#F59E0B", "#FEF3C7", "ALERTA", R.drawable.ic_temp)
             }
-
-            // ADVERTENCIA (Naranja)
-            tituloLower.contains("alerta") ||
-                    tituloLower.contains("advertencia") ||
-                    tituloLower.contains("bajo") -> {
-                aplicarEstilo(holder, context, R.color.alert_warning_text, R.drawable.ic_alert_warning)
+            "ERROR", "CRITICA" -> {
+                applyTypeStyle(holder, "#EF4444", "#FEE2E2", "ERROR", R.drawable.ic_alert_critical)
             }
-
-            // INFO (Azul/Verde)
-            else -> {
-                // Usamos el color primario o un azul info
-                aplicarEstilo(holder, context, R.color.text_primary, R.drawable.ic_notification)
+            "SUCCESS" -> {
+                applyTypeStyle(holder, "#10B981", "#D1FAE5", "ÉXITO", R.drawable.ic_check_circle)
             }
+            else -> { // INFO
+                applyTypeStyle(holder, "#3B82F6", "#DBEAFE", "INFO", R.drawable.ic_notification)
+            }
+        }
+
+        holder.btnMarcarLeida.setOnClickListener {
+            onMarcarLeidaClick(item)
         }
     }
 
-    private fun aplicarEstilo(
-        holder: NotificacionViewHolder,
-        context: Context,
-        colorResId: Int,
-        iconResId: Int
-    ) {
-        val color = ContextCompat.getColor(context, colorResId)
+    private fun applyTypeStyle(holder: NotificacionViewHolder, colorHex: String, bgHex: String, label: String, iconRes: Int) {
+        val color = Color.parseColor(colorHex)
+        val bgColor = Color.parseColor(bgHex)
+        
+        holder.txtTipoBadge.text = label
+        holder.txtTipoBadge.setTextColor(color)
+        holder.txtTipoBadge.backgroundTintList = ColorStateList.valueOf(bgColor)
+        
+        holder.imgIcono.setImageResource(iconRes)
+        holder.imgIcono.imageTintList = ColorStateList.valueOf(color)
+        
+        if (holder.badgeNoLeido.visibility == View.VISIBLE) {
+            holder.badgeNoLeido.backgroundTintList = ColorStateList.valueOf(color)
+        }
+    }
 
-        // 1. Color de la barra lateral
-        holder.indicator.setBackgroundColor(color)
+    private fun formatFecha(fechaStr: String): String {
+        return try {
+            // Asumiendo formato ISO del backend: 2024-03-20T10:30:00...
+            val sdfInput = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val date = sdfInput.parse(fechaStr)
+            val sdfOutput = SimpleDateFormat("dd MMM. HH:mm", Locale.getDefault())
+            sdfOutput.format(date ?: Date())
+        } catch (e: Exception) {
+            fechaStr.split("T").getOrNull(0) ?: fechaStr
+        }
+    }
 
-        // 2. Color del título
-        holder.titulo.setTextColor(color)
-
-        // 3. Color del badge de no leído (para que combine)
-        holder.badgeNoLeido.backgroundTintList = ColorStateList.valueOf(color)
-
-        // 4. Icono y su tinte (gris oscuro para el icono suele verse mejor en este diseño limpio)
-        holder.icono.setImageResource(iconResId)
+    private fun getRelativeTime(fechaStr: String): String {
+        return "Notificación reciente" // Por simplicidad, o implementar lógica de "hace X min"
     }
 
     override fun getItemCount() = lista.size
 
-    fun actualizarLista(nuevaLista: List<Notificacion>) {
+    fun actualizarLista(nuevaLista: List<UserNotificationResponse>) {
         lista = nuevaLista
         notifyDataSetChanged()
     }

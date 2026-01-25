@@ -11,9 +11,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.data.adapter.SeguimientoAdapter
+import com.example.proyectofinal6to_ecobox.data.network.*
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class HistorialSeguimientoActivity : AppCompatActivity() {
 
@@ -70,15 +72,10 @@ class HistorialSeguimientoActivity : AppCompatActivity() {
         btnBack.setOnClickListener { onBackPressed() }
 
         fabAdd.setOnClickListener {
-            // Obtener la especie de la planta para pasarla a la siguiente actividad
-            val planta = PlantaDao.obtenerPlantaPorId(plantaId, userId)
-            val especie = planta?.especie ?: "Sin especie"
-
             // Abrir actividad para agregar nuevo seguimiento
             val intent = Intent(this, AgregarSeguimientoActivity::class.java).apply {
                 putExtra("PLANTA_ID", plantaId)
                 putExtra("PLANTA_NOMBRE", plantaNombre)
-                putExtra("PLANTA_ESPECIE", especie)
                 putExtra("USER_ID", userId)
             }
             startActivityForResult(intent, REQUEST_ADD_SEGUIMIENTO)
@@ -91,27 +88,47 @@ class HistorialSeguimientoActivity : AppCompatActivity() {
     }
 
     private fun cargarHistorial() {
-        // Verificar acceso primero
-        if (!PlantaDao.verificarAccesoPlanta(userId, plantaId)) {
-            Toast.makeText(this, "No tienes acceso a esta planta", Toast.LENGTH_SHORT).show()
-            finish()
-            return
+        val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null)
+
+        if (token == null) return
+
+        lifecycleScope.launch {
+            try {
+                val api = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                // Obtener solo los seguimientos manuales (notas y fotos)
+                val response = api.getTrackingRecords("Token $token", plantaId)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val trackingRecords = response.body()!!
+                    
+                    // Convertir TrackingRecordResponse a Map<String, Any> para el adapter legacy
+                    val historialParamAdapter = trackingRecords.map { reg ->
+                        mapOf(
+                            "id" to reg.id,
+                            "estado" to reg.estado,
+                            "observaciones" to (reg.observaciones ?: ""),
+                            "fecha_formateada" to reg.fechaRegistro.replace("T", " ").substringBefore("."),
+                            "imagen" to (reg.imagenUrl ?: "")
+                        )
+                    }
+
+                    Log.d("Historial", "Seguimientos reales encontrados: ${historialParamAdapter.size}")
+
+                    // Configurar adapter (ordenar por id desc para ver el último primero)
+                    val adapter = SeguimientoAdapter(historialParamAdapter.sortedByDescending { it["id"] as Long }) { seguimiento ->
+                        mostrarDetalleSeguimiento(seguimiento)
+                    }
+                    rvHistorial.adapter = adapter
+
+                    // Actualizar contador en el header
+                    actualizarHeader(historialParamAdapter.size)
+                }
+            } catch (e: Exception) {
+                Log.e("Historial", "Error cargando seguimientos API: ${e.message}")
+                Toast.makeText(this@HistorialSeguimientoActivity, "Error al sincronizar historial visual", Toast.LENGTH_SHORT).show()
+            }
         }
-
-        // Obtener historial de seguimiento
-        val historial = PlantaDao.obtenerSeguimientoPlanta(plantaId)
-
-        Log.d("Historial", "Registros encontrados: ${historial.size}")
-
-        // Configurar adapter
-        val adapter = SeguimientoAdapter(historial) { seguimiento ->
-            // Click en un registro
-            mostrarDetalleSeguimiento(seguimiento)
-        }
-        rvHistorial.adapter = adapter
-
-        // Actualizar contador en el header
-        actualizarHeader(historial.size)
     }
 
     private fun actualizarHeader(totalRegistros: Int) {

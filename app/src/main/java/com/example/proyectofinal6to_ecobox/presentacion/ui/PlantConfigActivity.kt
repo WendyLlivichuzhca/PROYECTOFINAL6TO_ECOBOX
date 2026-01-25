@@ -15,6 +15,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.example.proyectofinal6to_ecobox.data.network.*
+import android.content.Context
 
 class PlantConfigActivity : AppCompatActivity() {
 
@@ -28,6 +30,7 @@ class PlantConfigActivity : AppCompatActivity() {
 
     private var plantaId: Long = -1
     private var plantaNombre: String = ""
+    private var configId: Long? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,18 +88,36 @@ class PlantConfigActivity : AppCompatActivity() {
     }
 
     private fun loadConfiguration() {
+        val prefs = getSharedPreferences("ecobox_prefs", Context.MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null)
+
+        if (token == null) {
+            Toast.makeText(this, "Error de sesión", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val config = PlantaDao.obtenerConfiguracionPlanta(plantaId)
-                withContext(Dispatchers.Main) {
-                    sliderHumidity.value = config.humedadObjetivo
-                    sliderTempRange.setValues(config.tempMin, config.tempMax)
+                val response = RetrofitClient.instance.getPlantConfig("Token $token", plantaId)
+                
+                if (response.isSuccessful && !response.body().isNullOrEmpty()) {
+                    val config = response.body()!!.firstOrNull { it.planta == plantaId } 
+                                ?: response.body()!![0]
                     
-                    tvHumidityLabel.text = "${config.humedadObjetivo.toInt()}%"
-                    tvTempRangeLabel.text = "${config.tempMin.toInt()}°C - ${config.tempMax.toInt()}°C"
+                    configId = config.id
+                                
+                    withContext(Dispatchers.Main) {
+                        sliderHumidity.value = config.humedadObjetivo ?: 60f
+                        val tMin = config.tempMin ?: 18f
+                        val tMax = config.tempMax ?: 28f
+                        sliderTempRange.setValues(tMin, tMax)
+                        
+                        tvHumidityLabel.text = "${(config.humedadObjetivo ?: 60f).toInt()}%"
+                        tvTempRangeLabel.text = "${tMin.toInt()}°C - ${tMax.toInt()}°C"
+                    }
                 }
             } catch (e: Exception) {
-                Log.e("PlantConfig", "Error al cargar config: ${e.message}")
+                Log.e("PlantConfig", "Error al cargar config API: ${e.message}")
             }
         }
     }
@@ -106,22 +127,44 @@ class PlantConfigActivity : AppCompatActivity() {
         val tempMin = sliderTempRange.values[0]
         val tempMax = sliderTempRange.values[1]
 
+        val prefs = getSharedPreferences("ecobox_prefs", Context.MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null)
+
+        if (token == null || configId == null) {
+            Toast.makeText(this, "No se puede guardar: Configuración no cargada", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         btnSaveConfig.isEnabled = false
         btnSaveConfig.text = "Guardando..."
 
         CoroutineScope(Dispatchers.IO).launch {
-            val config = PlantaDao.ConfiguracionPlanta(plantaId, humidity, tempMin, tempMax)
-            val success = PlantaDao.guardarConfiguracionPlanta(config)
+            try {
+                val data = mapOf(
+                    "humedad_objetivo" to humidity,
+                    "temperatura_minima" to tempMin,
+                    "temperatura_maxima" to tempMax
+                )
+                
+                val response = RetrofitClient.instance.updatePlantConfig("Token $token", configId!!, data)
 
-            withContext(Dispatchers.Main) {
-                btnSaveConfig.isEnabled = true
-                btnSaveConfig.text = "GUARDAR CONFIGURACIÓN"
+                withContext(Dispatchers.Main) {
+                    btnSaveConfig.isEnabled = true
+                    btnSaveConfig.text = "GUARDAR CONFIGURACIÓN"
 
-                if (success) {
-                    Toast.makeText(this@PlantConfigActivity, "¡Configuración guardada!", Toast.LENGTH_SHORT).show()
-                    finish()
-                } else {
-                    Toast.makeText(this@PlantConfigActivity, "Error al guardar configuración", Toast.LENGTH_SHORT).show()
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@PlantConfigActivity, "¡Configuración sincronizada!", Toast.LENGTH_SHORT).show()
+                        finish()
+                    } else {
+                        Toast.makeText(this@PlantConfigActivity, "Error API: ${response.code()}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("PlantConfig", "Error saving config: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    btnSaveConfig.isEnabled = true
+                    btnSaveConfig.text = "GUARDAR CONFIGURACIÓN"
+                    Toast.makeText(this@PlantConfigActivity, "Error de red al guardar", Toast.LENGTH_SHORT).show()
                 }
             }
         }

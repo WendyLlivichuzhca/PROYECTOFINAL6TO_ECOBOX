@@ -18,10 +18,17 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.bumptech.glide.Glide
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
+import com.example.proyectofinal6to_ecobox.data.network.*
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -264,15 +271,13 @@ class AgregarSeguimientoActivity : AppCompatActivity() {
             return
         }
 
-        // Verificar acceso a la planta
-        if (!PlantaDao.verificarAccesoPlanta(userId, plantaId)) {
-            Toast.makeText(this, "No tienes acceso a esta planta", Toast.LENGTH_SHORT).show()
-            finish()
+        val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null)
+
+        if (token == null) {
+            Toast.makeText(this, "Debe iniciar sesión", Toast.LENGTH_SHORT).show()
             return
         }
-
-        // Determinar la ruta de la imagen
-        val imagenPath = currentPhotoPath
 
         // Mostrar diálogo de progreso
         val progressDialog = AlertDialog.Builder(this)
@@ -281,36 +286,48 @@ class AgregarSeguimientoActivity : AppCompatActivity() {
             .create()
         progressDialog.show()
 
-        // Usar thread para no bloquear la UI
-        Thread {
+        lifecycleScope.launch {
             try {
-                // Guardar en base de datos
-                val exitoso = PlantaDao.agregarSeguimientoPlanta(
-                    plantaId = plantaId,
-                    estado = estado,
-                    observaciones = observaciones,
-                    imagenPath = imagenPath
-                )
+                val api = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                
+                val partMap = mutableMapOf<String, RequestBody>()
+                
+                fun addPart(key: String, value: String) {
+                    partMap[key] = value.toRequestBody("text/plain".toMediaTypeOrNull())
+                }
 
-                runOnUiThread {
-                    progressDialog.dismiss()
+                // Campos requeridos por SeguimientoEstadoPlantaSerializer
+                addPart("planta", plantaId.toString())
+                addPart("estado", estado)
+                addPart("observaciones", observaciones)
 
-                    if (exitoso) {
-                        Toast.makeText(this, "✅ Seguimiento guardado exitosamente", Toast.LENGTH_SHORT).show()
-                        setResult(RESULT_OK)
-                        finish()
-                    } else {
-                        Toast.makeText(this, "❌ Error al guardar el seguimiento", Toast.LENGTH_SHORT).show()
-                    }
+                val imagePart = if (currentPhotoPath != null) {
+                    val file = File(currentPhotoPath!!)
+                    if (file.exists()) {
+                        val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                        MultipartBody.Part.createFormData("imagen", file.name, requestFile)
+                    } else null
+                } else null
+
+                val response = api.createTrackingRecord("Token $token", partMap, imagePart)
+
+                progressDialog.dismiss()
+
+                if (response.isSuccessful) {
+                    Toast.makeText(this@AgregarSeguimientoActivity, "✅ Seguimiento guardado exitosamente", Toast.LENGTH_SHORT).show()
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                    android.util.Log.e("AgregarSeguimiento", "Error API: $errorBody")
+                    Toast.makeText(this@AgregarSeguimientoActivity, "❌ Error al guardar en la nube", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                runOnUiThread {
-                    progressDialog.dismiss()
-                    Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    e.printStackTrace()
-                }
+                progressDialog.dismiss()
+                Toast.makeText(this@AgregarSeguimientoActivity, "Error de red: ${e.message}", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
             }
-        }.start()
+        }
     }
 
     private fun mostrarImagenSeleccionada(file: File) {

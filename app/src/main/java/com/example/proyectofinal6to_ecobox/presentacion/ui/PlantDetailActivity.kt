@@ -19,8 +19,8 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.example.proyectofinal6to_ecobox.data.model.Planta
+import com.example.proyectofinal6to_ecobox.data.network.*
 import com.example.proyectofinal6to_ecobox.utils.ImageUtils
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
@@ -31,10 +31,11 @@ import com.github.mikephil.charting.formatter.ValueFormatter
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.materialswitch.MaterialSwitch
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import androidx.lifecycle.lifecycleScope
+import com.example.proyectofinal6to_ecobox.data.network.*
 import kotlinx.coroutines.launch
+import java.util.Date
 
 class PlantDetailActivity : AppCompatActivity() {
 
@@ -70,6 +71,22 @@ class PlantDetailActivity : AppCompatActivity() {
     // Gráfico
     private lateinit var chartHistory: LineChart
     private var historialTitle: TextView? = null
+
+    // Nuevas vistas - Paridad Web
+    private lateinit var pbHumidity: ProgressBar
+    private lateinit var tvHumidityTarget: TextView
+    private lateinit var pbLight: ProgressBar
+    private lateinit var tvLightTarget: TextView
+    private lateinit var pbTemp: ProgressBar
+    private lateinit var tvTempTarget: TextView
+    
+    private lateinit var cardAIAnalysis: CardView
+    private lateinit var tvAIPrediction: TextView
+    private lateinit var tvAIProbability: TextView
+    private lateinit var tvDetailAspect: TextView
+    private lateinit var tvDetailDate: TextView
+    private lateinit var tvDetailSensors: TextView
+    private lateinit var tvDetailFamily: TextView
 
     // Datos
     private var planta: Planta? = null
@@ -137,8 +154,25 @@ class PlantDetailActivity : AppCompatActivity() {
 
         chartHistory = findViewById(R.id.chartHistory)
         historialTitle = findViewById(R.id.tvHistoryTitle)
-
         btnGestionarSensores = findViewById(R.id.btnGestionarSensores)
+
+        // Vistas de Paridad Web
+        pbHumidity = findViewById(R.id.pbHumidity)
+        tvHumidityTarget = findViewById(R.id.tvHumidityTarget)
+        pbLight = findViewById(R.id.pbLight)
+        tvLightTarget = findViewById(R.id.tvLightTarget)
+        pbTemp = findViewById(R.id.pbTemp)
+        tvTempTarget = findViewById(R.id.tvTempTarget)
+        
+        cardAIAnalysis = findViewById(R.id.cardAIAnalysis)
+        tvAIPrediction = findViewById(R.id.tvAIPrediction)
+        tvAIProbability = findViewById(R.id.tvAIProbability)
+
+        // Información General
+        tvDetailAspect = findViewById(R.id.tvDetailAspect)
+        tvDetailDate = findViewById(R.id.tvDetailDate)
+        tvDetailSensors = findViewById(R.id.tvDetailSensors)
+        tvDetailFamily = findViewById(R.id.tvDetailFamily)
     }
 
     private fun setupClickListeners() {
@@ -185,39 +219,14 @@ class PlantDetailActivity : AppCompatActivity() {
             return
         }
 
-        // Verificar acceso del usuario en un hilo separado
-        Thread {
-            try {
-                val tieneAcceso = PlantaDao.verificarAccesoSeguimiento(userId, plantaId)
-
-                runOnUiThread {
-                    if (tieneAcceso) {
-                        // Crear intent para ir a la actividad de seguimiento
-                        val intent = Intent(this, HistorialSeguimientoActivity::class.java).apply {
-                            putExtra("PLANTA_ID", plantaId)
-                            putExtra("PLANTA_NOMBRE", plantaNombre)
-                            putExtra("USER_ID", userId)
-                        }
-                        startActivityForResult(intent, SEGUIMIENTO_REQUEST_CODE)
-                    } else {
-                        Toast.makeText(
-                            this,
-                            "No tienes acceso al seguimiento de esta planta",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("PlantDetail", "Error verificando acceso: ${e.message}", e)
-                runOnUiThread {
-                    Toast.makeText(
-                        this,
-                        "Error al verificar acceso: ${e.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }.start()
+        // En la versión API, el acceso se verifica al cargar la planta o al intentar la acción
+        // Por ahora permitimos la navegación si la planta se cargó con éxito
+        val intent = Intent(this, HistorialSeguimientoActivity::class.java).apply {
+            putExtra("PLANTA_ID", plantaId)
+            putExtra("PLANTA_NOMBRE", plantaNombre)
+            putExtra("USER_ID", userId)
+        }
+        startActivityForResult(intent, SEGUIMIENTO_REQUEST_CODE)
     }
 
     private fun navigateToSensors() {
@@ -344,130 +353,191 @@ class PlantDetailActivity : AppCompatActivity() {
             return
         }
 
-        // Obtener más datos de la BD
-        Thread {
+        val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
+        val token = prefs.getString("auth_token", "") ?: ""
+
+        if (token.isEmpty()) {
+            Toast.makeText(this, "Sesión expirada", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        lifecycleScope.launch {
             try {
-                // Necesitas implementar este método
-                val plantaCompleta = PlantaDao.obtenerPlantaPorId(plantaId, userId)
-                val datosSensores = PlantaDao.obtenerDatosSensoresPlanta(plantaId)
+                // Peticiones base en paralelo
+                val deferredPlant = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                    .getPlant("Token $token", plantaId)
+                
+                val deferredConfig = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                    .getPlantConfig("Token $token", plantaId)
+                
+                val deferredSensors = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                    .getSensors("Token $token", plantaId)
 
-                runOnUiThread {
-                    if (plantaCompleta != null) {
-                        planta = plantaCompleta
-                        plantaNombre = plantaCompleta.nombre
-                        plantaUbicacion = datosSensores["ubicacion"] as? String ?: "Mi Jardín"
-                        plantaFoto = plantaCompleta.foto ?: ""
-
-                        val humedad = datosSensores["humedad"] as? Float ?: 0f
-                        val temperatura = datosSensores["temperatura"] as? Float ?: 0f
-                        val luz = datosSensores["luz"] as? Float ?: 0f
-                        val estado = datosSensores["estado"] as? String ?: "healthy"
-
-                        updateUI(
-                            humedad,
-                            temperatura,
-                            luz,
-                            estado,
-                            plantaUbicacion,
-                            plantaNombre,
-                            plantaFoto
-                        )
-                        loadAdditionalData()
-                        loadHistoryData(24)
-                        checkAdminPermissions()
-                    } else {
-                        Toast.makeText(
-                            this,
-                            "Error: Planta no encontrada en BD",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        finish()
+                if (deferredPlant.isSuccessful && deferredPlant.body() != null) {
+                    val p = deferredPlant.body()!!
+                    
+                    // Crear objeto local Planta para compatibilidad
+                    planta = com.example.proyectofinal6to_ecobox.data.model.Planta(
+                        p.id, p.nombre, p.especie ?: "", p.fecha_plantacion ?: "", 
+                        p.descripcion ?: "", p.familia
+                    ).apply {
+                        setFoto(p.imagen_url ?: "")
+                        setEstado(p.estado_salud ?: "Normal")
                     }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                runOnUiThread {
-                    Toast.makeText(this, "Error cargando planta", Toast.LENGTH_SHORT).show()
+
+                    plantaNombre = p.nombre
+                    plantaUbicacion = p.familia_nombre ?: "Mi Jardín"
+                    plantaFoto = p.imagen_url ?: ""
+
+                    // Obtener configuración
+                    val config = if (deferredConfig.isSuccessful && !deferredConfig.body().isNullOrEmpty()) {
+                        deferredConfig.body()!!.firstOrNull { it.planta == plantaId } 
+                            ?: deferredConfig.body()!![0]
+                    } else null
+
+                    // Sensores Count
+                    val sensorCount = if (deferredSensors.isSuccessful) deferredSensors.body()?.size ?: 0 else 0
+
+                    // Obtener mediciones reales de sensores
+                    var realHumidity: Float? = null
+                    var realTemp: Float? = null
+                    var realLight: Float? = null
+                    
+                    if (deferredSensors.isSuccessful && !deferredSensors.body().isNullOrEmpty()) {
+                        deferredSensors.body()!!.forEach { sensor ->
+                            try {
+                                val mResponse = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                                    .getSensorMeasurements("Token $token", sensor.id)
+                                
+                                if (mResponse.isSuccessful && !mResponse.body().isNullOrEmpty()) {
+                                    val valor = mResponse.body()!![0].valor
+                                    when (sensor.tipoSensor) {
+                                        1 -> realTemp = valor
+                                        2 -> realHumidity = valor
+                                        3 -> realHumidity = valor // Humedad suelo
+                                        4 -> realLight = valor // Luz
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Log.w("PlantDetail", "Error fetching measurement for sensor ${sensor.id}")
+                            }
+                        }
+                    }
+
+                    // 1. Actualizar Base UI
+                    updateBaseUI(p, plantaUbicacion)
+
+                    // 2. Información General
+                    tvDetailAspect.text = p.aspecto ?: "Normal"
+                    tvDetailDate.text = p.fecha_plantacion?.split("T")?.get(0) ?: "Desconocida"
+                    tvDetailSensors.text = "$sensorCount"
+                    tvDetailFamily.text = "${p.familia}"
+
+                    // 3. Calcular y Actualizar UI Detallada e IA (Emulación Web)
+                    updateEmulatedDetailedUI(p, config, realHumidity, realTemp, realLight)
+                    
+                    loadAutoSettings()
+                    loadHistoryData(24)
+                    checkAdminPermissions()
+                } else {
+                    Toast.makeText(this@PlantDetailActivity, "Error: Planta no accesible", Toast.LENGTH_SHORT).show()
                     finish()
                 }
+            } catch (e: Exception) {
+                Log.e("PlantDetail", "Error loading plant: ${e.message}", e)
+                Toast.makeText(this@PlantDetailActivity, "Error de red al cargar planta", Toast.LENGTH_SHORT).show()
+                finish()
             }
-        }.start()
+        }
     }
 
-    private fun updateUI(
-        humedad: Float,
-        temperatura: Float,
-        luz: Float,
-        estado: String,
-        ubicacion: String,
-        nombre: String,
-        fotoUrl: String
-    ) {
-        tvPlantName.text = nombre
-        tvLocation.text = "📍 $ubicacion"
+    private fun updateBaseUI(p: PlantResponse, ubicacion: String) {
+        tvPlantName.text = p.nombre
+        val aspectoDisplay = p.aspecto ?: "Normal"
+        tvLocation.text = "📍 $ubicacion | ✨ $aspectoDisplay"
 
-        // Cargar la foto
-        if (fotoUrl.isNotEmpty()) {
-            try {
-                ImageUtils.loadPlantImage(
-                    imageData = fotoUrl,
-                    imageView = ivPlant,
-                    placeholderResId = R.drawable.img_plant_placeholder
-                )
-            } catch (e: Exception) {
-                ivPlant.setImageResource(R.drawable.img_plant_placeholder)
-            }
+        // Cargar foto
+        if (!p.imagen_url.isNullOrEmpty()) {
+            ImageUtils.loadPlantImage(p.imagen_url, ivPlant, R.drawable.img_plant_placeholder)
         } else {
             ivPlant.setImageResource(R.drawable.img_plant_placeholder)
         }
 
-        // Valores numéricos
-        tvHumidityValue.text = "${humedad.toInt()}%"
-        tvLightValue.text = "${luz.toInt()} lux"
-        tvTempValue.text = "${temperatura.toInt()}°C"
-
-        // Colores de las tarjetas
-        updateCardColor(cardHumidity, humedad, "humidity")
-        updateCardColor(cardLight, luz, "light")
-        updateCardColor(cardTemp, temperatura, "temperature")
-
-        // Lógica de estado General
-        val (icono, texto, colorRes) = when (estado.toLowerCase(Locale.ROOT)) {
-            "healthy", "saludable", "excelente" -> Triple("🌿", "Sana", R.color.status_healthy_dark)
-            "warning", "advertencia", "moderado" -> Triple(
-                "⚠️",
-                "Atención",
-                R.color.status_warning_dark
-            )
-
-            "critical", "crítico", "grave" -> Triple("🥀", "Crítico", R.color.status_critical_dark)
-            else -> Triple("🤔", "Desconocido", R.color.text_gray)
+        // Estado General Badge
+        val estado = p.estado_salud ?: "normal"
+        val (info, bgRes) = when (estado.lowercase(Locale.ROOT)) {
+            "healthy", "saludable", "excelente" -> Triple("🌿", "Sana", R.color.status_healthy_dark) to R.color.status_healthy_light
+            "warning", "atención", "necesita_agua" -> Triple("💧", "Sedienta", R.color.status_warning_dark) to R.color.status_warning_light
+            "critical", "peligro", "crítico" -> Triple("🥀", "Crítico", R.color.status_critical_dark) to R.color.status_critical_light
+            else -> Triple("✅", "Normal", R.color.eco_primary) to R.color.status_healthy_light
         }
+        val (icono, texto, colorRes) = info
 
-        tvStatusText.text = "$icono $texto"
+        tvStatusText.text = "${icono} ${texto}"
         tvStatusText.setTextColor(ContextCompat.getColor(this, colorRes))
+        cardStatus.setCardBackgroundColor(ContextCompat.getColor(this, bgRes))
+    }
 
-        // Actualizar color de fondo de la card de estado
-        val backgroundColor = when (estado.toLowerCase(Locale.ROOT)) {
-            "healthy", "saludable", "excelente" -> R.color.status_healthy_light
-            "warning", "advertencia", "moderado" -> R.color.status_warning_light
-            "critical", "crítico", "grave" -> R.color.status_critical_light
-            else -> R.color.status_unknown_light
-        }
-        cardStatus.setCardBackgroundColor(ContextCompat.getColor(this, backgroundColor))
+    private fun updateEmulatedDetailedUI(
+        p: PlantResponse, 
+        config: PlantConfigResponse?,
+        realHumidity: Float?,
+        realTemp: Float?,
+        realLight: Float?
+    ) {
+        // Combinar datos: Sensores Reales > Datos Planta API > Fallback (Estilo Web)
+        val humedad = realHumidity ?: p.humedad_actual
+        val temp = realTemp ?: p.temperatura_actual
+        val luz = realLight
 
-        // Nivel de agua
-        val nivelAgua = calculateWaterLevel(humedad)
+        // Actualizar valores numéricos (Formato .00 como en la web)
+        tvHumidityValue.text = if (humedad != null) String.format("%.2f%%", humedad) else "N/A"
+        tvTempValue.text = if (temp != null) String.format("%.2f°C", temp) else "N/A"
+        tvLightValue.text = if (luz != null) String.format("%.2f lux", luz) else "No instalado"
+
+        // Actualizar barras de progreso y objetivos
+        pbHumidity.progress = (humedad ?: 0f).toInt()
+        val humTarget = config?.humedadObjetivo?.toInt() ?: 60
+        tvHumidityTarget.text = "Objetivo: $humTarget%"
+
+        pbTemp.progress = if (temp != null) ((temp - 10) / (40 - 10) * 100).toInt().coerceIn(0, 100) else 0
+        val tMin = config?.tempMin?.toInt() ?: 18
+        val tMax = config?.tempMax?.toInt() ?: 28
+        tvTempTarget.text = "Rango: $tMin-$tMax°C"
+
+        pbLight.progress = if (luz != null) (luz / 1000 * 100).toInt().coerceIn(0, 100) else 0
+        tvLightTarget.text = if (luz != null) "Recomendado: 500-1000 lux" else "Sensor no detectado"
+
+        // Agua Card
+        val nivelAgua = calculateWaterLevel(humedad ?: 65f)
         tvWaterLevelPercent.text = "$nivelAgua%"
         progressWater.progress = nivelAgua
-
-        // Actualizar color del texto del porcentaje de agua
-        val waterColor = when {
-            nivelAgua > 70 -> Color.parseColor("#10B981")
-            nivelAgua > 30 -> Color.parseColor("#F59E0B")
-            else -> Color.parseColor("#EF4444")
+        
+        // --- LÓGICA IA LOCAL (Paridad Web Violeta) ---
+        cardAIAnalysis.visibility = View.VISIBLE
+        
+        val prob = if ((humedad ?: 65f) < 50) 90 else if ((humedad ?: 65f) < 65) 75 else 25
+        val recomendacion = when {
+            prob > 80 -> "Se recomienda riego ALTO en las próximas horas"
+            prob > 50 -> "Se recomienda riego MODERADO pronto"
+            else -> "Riego bajo en las próximas horas"
         }
-        tvWaterLevelPercent.setTextColor(waterColor)
+        
+        tvAIProbability.text = "Probabilidad de riego: $prob%"
+        tvAIPrediction.text = recomendacion
+        
+        val colorIA = when {
+            prob > 80 -> Color.parseColor("#DC2626") // Rojo
+            prob > 50 -> Color.parseColor("#D97706") // Naranja
+            else -> Color.parseColor("#15803D") // Verde
+        }
+        tvAIProbability.setTextColor(colorIA)
+
+        // Sincronizar switches
+        config?.let {
+            switchWaterAuto.isChecked = it.riegoAutomatico
+        }
     }
 
     private fun updateCardColor(card: CardView, value: Float, type: String) {
@@ -672,39 +742,11 @@ class PlantDetailActivity : AppCompatActivity() {
             Toast.makeText(this, "Error: Planta no disponible", Toast.LENGTH_SHORT).show()
             return
         }
-
-        // Obtener información de la planta en un hilo separado
-        Thread {
-            try {
-                val info = PlantaDao.obtenerInfoParaDialogoEliminar(plantaId, userId)
-
-                runOnUiThread {
-                    val plantName = planta?.nombre ?: info["nombre"] as? String ?: "esta planta"
-                    val sensorCount = info["sensor_count"] as? Int ?: 0
-                    val hasAccess = info["tiene_acceso"] as? Boolean ?: false
-
-                    if (!hasAccess) {
-                        Toast.makeText(
-                            this,
-                            "No tienes permiso para eliminar esta planta",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        return@runOnUiThread
-                    }
-
-                    showCustomDeleteDialog(plantName, sensorCount)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                runOnUiThread {
-                    Toast.makeText(
-                        this,
-                        "Error al cargar información de la planta",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }.start()
+        
+        val plantName = planta?.nombre ?: "esta planta"
+        // En la versión API simplificada, no mostramos el conteo de sensores antes de eliminar
+        // ya que requeriría otra llamada a la API. Mostramos un mensaje genérico.
+        showCustomDeleteDialog(plantName, 0)
     }
 
     private fun showCustomDeleteDialog(plantName: String, sensorCount: Int) {
@@ -712,17 +754,11 @@ class PlantDetailActivity : AppCompatActivity() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_delete_plant, null)
 
         val tvDeletePlantName = dialogView.findViewById<TextView>(R.id.tvDeletePlantName)
-        val tvSensorCount = dialogView.findViewById<TextView>(R.id.tvSensorCount)
+        val tvSensorCountLabel = dialogView.findViewById<TextView>(R.id.tvSensorCount)
 
         // Configurar textos
         tvDeletePlantName.text = "$plantName (ID: $plantaId)"
-
-        val sensorText = when (sensorCount) {
-            0 -> "Esta planta no tiene sensores asociados"
-            1 -> "Atención: Esta planta tiene 1 sensor asociado"
-            else -> "Atención: Esta planta tiene $sensorCount sensores asociados"
-        }
-        tvSensorCount.text = sensorText
+        tvSensorCountLabel.text = "Se eliminarán también todos los datos históricos"
 
         // Crear el diálogo
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
@@ -757,19 +793,28 @@ class PlantDetailActivity : AppCompatActivity() {
 
     private fun checkAdminPermissions() {
         val currentPlanta = planta ?: return
-        Thread {
+        val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
+        val token = prefs.getString("auth_token", "") ?: ""
+
+        if (token.isEmpty()) return
+
+        lifecycleScope.launch {
             try {
-                val isAdmin = com.example.proyectofinal6to_ecobox.data.dao.FamiliaDao.esAdministrador(currentPlanta.familiaId, userId)
+                val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                    .getFamilies("Token $token")
                 
-                runOnUiThread {
-                    this@PlantDetailActivity.isAdmin = isAdmin
-                    // Notificar si no es admin para deshabilitar opciones de menú
+                if (response.isSuccessful && response.body() != null) {
+                    val familias = response.body()!!
+                    val familiaDePlanta = familias.find { it.id == currentPlanta.familiaId }
+                    
+                    isAdmin = familiaDePlanta?.es_admin ?: false
                     invalidateOptionsMenu()
+                    Log.d("PlantDetail", "Admin status for family ${currentPlanta.familiaId}: $isAdmin")
                 }
             } catch (e: Exception) {
-                Log.e("PlantDetail", "Error verificando permisos: ${e.message}")
+                Log.e("PlantDetail", "Error checking permissions: ${e.message}")
             }
-        }.start()
+        }
     }
 
     override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
@@ -789,40 +834,34 @@ class PlantDetailActivity : AppCompatActivity() {
             .create()
         progressDialog.show()
 
-        Thread {
+        val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
+        val token = prefs.getString("auth_token", "") ?: ""
+
+        lifecycleScope.launch {
             try {
-                // Eliminar la planta de la base de datos
-                val success = PlantaDao.eliminarPlantaCompleta(plantaId, userId)
+                val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance
+                    .deletePlant("Token $token", plantaId)
 
-                runOnUiThread {
-                    progressDialog.dismiss()
+                progressDialog.dismiss()
 
-                    if (success) {
-                        Toast.makeText(this, "✅ Planta '$plantName' eliminada", Toast.LENGTH_SHORT)
-                            .show()
+                if (response.isSuccessful) {
+                    Toast.makeText(this@PlantDetailActivity, "✅ Planta '$plantName' eliminada", Toast.LENGTH_SHORT).show()
 
-                        // Crear intent de resultado para actualizar la actividad anterior
-                        val resultIntent = Intent().apply {
-                            putExtra("PLANTA_ELIMINADA", true)
-                            putExtra("PLANTA_ID_ELIMINADA", plantaId)
-                        }
-                        setResult(RESULT_OK, resultIntent)
-
-                        // Regresar a la actividad anterior
-                        finish()
-                    } else {
-                        Toast.makeText(this, "❌ Error al eliminar la planta", Toast.LENGTH_SHORT)
-                            .show()
+                    val resultIntent = Intent().apply {
+                        putExtra("PLANTA_ELIMINADA", true)
+                        putExtra("PLANTA_ID_ELIMINADA", plantaId)
                     }
+                    setResult(RESULT_OK, resultIntent)
+                    finish()
+                } else {
+                    Toast.makeText(this@PlantDetailActivity, "❌ Error al eliminar: ${response.message()}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
-                runOnUiThread {
-                    progressDialog.dismiss()
-                    Toast.makeText(this, "❌ Error al eliminar la planta", Toast.LENGTH_SHORT).show()
-                }
+                Log.e("PlantDetail", "Error deleting plant: ${e.message}")
+                progressDialog.dismiss()
+                Toast.makeText(this@PlantDetailActivity, "❌ Error de red al eliminar", Toast.LENGTH_SHORT).show()
             }
-        }.start()
+        }
     }
 
     private fun updateAutoWaterSetting(enabled: Boolean) {

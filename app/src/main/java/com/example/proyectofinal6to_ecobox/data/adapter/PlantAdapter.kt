@@ -24,22 +24,17 @@ class PlantAdapter(
     private var listaCompleta: List<PlantaConDatos> = plantasData
 
     class PlantViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        // IDs actualizados según tu XML
-        val ivPlantImage: ImageView = view.findViewById(R.id.ivPlantImage) // NUEVO: ImageView
+        val ivPlantImage: ImageView = view.findViewById(R.id.ivPlantImage)
         val tvName: TextView = view.findViewById(R.id.tvPlantName)
-        val tvLocation: TextView = view.findViewById(R.id.tvLocation)
         val tvStatusBadge: TextView = view.findViewById(R.id.tvStatusBadge)
+        val tvDescription: TextView = view.findViewById(R.id.tvDescription)
 
         // Sensores
         val tvHumidity: TextView = view.findViewById(R.id.tvHumidity)
-        val tvLight: TextView = view.findViewById(R.id.tvLight)
         val tvTemp: TextView = view.findViewById(R.id.tvTemp)
 
-        val tvSensorCount: TextView = view.findViewById(R.id.tvSensorCount)
-
-        // Agua
-        val tvWaterPercent: TextView = view.findViewById(R.id.tvWaterPercent)
-        val progressWater: ProgressBar = view.findViewById(R.id.progressWater)
+        // Botón
+        val btnVerDetalles: View = view.findViewById(R.id.btnVerDetalles)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlantViewHolder {
@@ -53,76 +48,57 @@ class PlantAdapter(
 
         // 1. Asignar textos básicos
         holder.tvName.text = item.planta.nombre
-        holder.tvLocation.text = item.ubicacion
-
-        // 2. Asignar valores de sensores
-        holder.tvHumidity.text = "${item.humedadSuelo.toInt()}%"
-        holder.tvLight.text = "${item.luz.toInt()}%"
-        holder.tvTemp.text = "${item.temperatura.toInt()}°C"
-        // NUEVO: Mostrar número de sensores
-        val sensorCountText = if (item.sensorCount > 0) {
-            "${item.sensorCount}"
+        holder.tvDescription.text = if (!item.planta.descripcion.isNullOrEmpty()) {
+            item.planta.descripcion
         } else {
-            "0"
+            "Sin descripción disponible"
         }
-        holder.tvSensorCount.text = sensorCountText
-        // 3. Configurar Barra de Agua
-        holder.tvWaterPercent.text = "${item.nivelAgua}%"
-        holder.progressWater.progress = item.nivelAgua
 
-        // 4. CARGAR LA FOTO DE LA PLANTA
-        if (item.planta.tieneFoto() && item.planta.foto.isNotEmpty()) {
-            try {
-                // Usar ImageUtils para manejar correctamente rutas locales, URLs y Base64
-                ImageUtils.loadPlantImage(
-                    imageData = item.planta.foto,
-                    imageView = holder.ivPlantImage,
-                    placeholderResId = R.drawable.bg_leaves
-                )
-            } catch (e: Exception) {
-                android.util.Log.e("PlantAdapter", "❌ Error cargando imagen: ${e.message}")
-                holder.ivPlantImage.setImageResource(R.drawable.bg_leaves)
-            }
+        // 2. Asignar valores de sensores (Lógica independiente por métrica)
+        // Humedad
+        if (item.humedadSuelo != null) {
+            holder.tvHumidity.text = String.format("%.2f%%", item.humedadSuelo)
+            holder.tvHumidity.setTextColor(Color.parseColor("#3B82F6")) // Azul
         } else {
-            // Si no tiene foto, usar imagen por defecto
-            holder.ivPlantImage.setImageResource(R.drawable.bg_leaves)
+            holder.tvHumidity.text = "N/A"
+            holder.tvHumidity.setTextColor(Color.parseColor("#EF4444")) // Rojo para N/A
         }
 
-        // 5. Configuración del Badge de Estado
-        when (item.estado.lowercase()) {
-            "healthy", "saludable" -> {
-                holder.tvStatusBadge.text = "Saludable"
-                holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_healthy))
-                holder.tvStatusBadge.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#E8F5E9"))
-            }   
-            "warning", "necesita_agua", "necesita atención", "revisar" -> {
-                holder.tvStatusBadge.text = "Revisar"
-                holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_warning))
-                holder.tvStatusBadge.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#FFF8E1"))
-            }
-            "critical", "peligro", "crítico" -> {
-                holder.tvStatusBadge.text = "Crítico"
-                holder.tvStatusBadge.setTextColor(ContextCompat.getColor(context, R.color.status_critical))
-                holder.tvStatusBadge.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#FFEBEE"))
-            }
-            else -> {
-                holder.tvStatusBadge.text = item.estado.capitalize()
-                holder.tvStatusBadge.setTextColor(Color.GRAY)
-                holder.tvStatusBadge.backgroundTintList = ColorStateList.valueOf(Color.LTGRAY)
-            }
+        // Temperatura
+        if (item.temperatura != null) {
+            holder.tvTemp.text = String.format("%.2f°C", item.temperatura)
+            holder.tvTemp.setTextColor(Color.parseColor("#EF4444")) // Rojo (como en la web)
+        } else {
+            holder.tvTemp.text = "N/A"
+            holder.tvTemp.setTextColor(Color.parseColor("#EF4444"))
         }
 
-        // 6. Color de la Barra de Progreso (Agua)
-        val colorBarra = when {
-            item.nivelAgua > 50 -> ContextCompat.getColor(context, R.color.eco_primary)
-            item.nivelAgua > 20 -> ContextCompat.getColor(context, R.color.status_warning)
-            else -> ContextCompat.getColor(context, R.color.status_critical)
+        // 3. CARGAR LA FOTO DE LA PLANTA
+        val fotoUrl = item.planta.foto
+        if (fotoUrl.isNotEmpty()) {
+            ImageUtils.loadPlantImage(fotoUrl, holder.ivPlantImage, R.drawable.img_plant_placeholder)
+        } else {
+            holder.ivPlantImage.setImageResource(R.drawable.img_plant_placeholder)
         }
-        holder.progressWater.progressTintList = ColorStateList.valueOf(colorBarra)
-        holder.tvWaterPercent.setTextColor(colorBarra)
 
-        // 7. Click Listener
-        holder.itemView.setOnClickListener {
+        // 4. Configuración del Badge de Estado
+        val estado = item.estado.lowercase()
+        val (textoEstado, colorTexto, colorBg) = when {
+            estado.contains("healthy") || estado.contains("saludable") -> 
+                Triple("SALUDABLE", "#047857", "#D1FAE5")
+            estado.contains("warning") || estado.contains("revisar") || estado.contains("normal") -> 
+                Triple("NORMAL", "#1D4ED8", "#DBEAFE")
+            estado.contains("critical") || estado.contains("crítico") -> 
+                Triple("CRÍTICO", "#B91C1C", "#FEE2E2")
+            else -> Triple("NORMAL", "#1D4ED8", "#DBEAFE")
+        }
+
+        holder.tvStatusBadge.text = textoEstado
+        holder.tvStatusBadge.setTextColor(Color.parseColor(colorTexto))
+        holder.tvStatusBadge.backgroundTintList = ColorStateList.valueOf(Color.parseColor(colorBg))
+
+        // 5. Click Listener (Tanto en tarjeta como en botón)
+        val action = {
             val datos = mapOf(
                 "ubicacion" to item.ubicacion,
                 "humedad" to item.humedadSuelo,
@@ -130,10 +106,15 @@ class PlantAdapter(
                 "luz" to item.luz,
                 "estado" to item.estado,
                 "ultimoRiego" to item.ultimoRiego,
-                "foto" to item.planta.foto // NUEVO: Pasar la foto al detalle
-            )
+                "sensorCount" to item.sensorCount,
+                "foto" to item.planta.foto
+            ).filterValues { it != null } as Map<String, Any>
+            
             onPlantClick(item.planta, datos)
         }
+
+        holder.itemView.setOnClickListener { action() }
+        holder.btnVerDetalles.setOnClickListener { action() }
     }
 
     override fun getItemCount() = plantasData.size
@@ -160,13 +141,13 @@ class PlantAdapter(
     data class PlantaConDatos(
         val planta: Planta,
         val ubicacion: String,
-        val humedadSuelo: Float,
-        val temperatura: Float,
+        val humedadSuelo: Float?,
+        val temperatura: Float?,
         val luz: Float,
         val nivelAgua: Int,
         val estado: String,
         val ultimoRiego: String,
-        val sensorCount: Int // NUEVO: Agregar conteo de sensores
-
+        val sensorCount: Int,
+        val aspecto: String? = null
     )
 }
