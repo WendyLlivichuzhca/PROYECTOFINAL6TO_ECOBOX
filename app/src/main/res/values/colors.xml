@@ -190,5 +190,11 @@
     <color name="blue_gray">#78909C</color>
     
     <color name="status_unknown_light">@color/gray_100</color>
+
+    <!-- Colores principales -->
+    <color name="success">#4CAF50</color>
+    <color name="info">#2196F3</color>
+    <color name="background">#FAFAFA</color>
+    <color name="surface">#FFFFFF</color>
 </resources>
 

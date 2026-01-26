@@ -895,62 +895,135 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
+    <!-- Barra inferior con botones de riego -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="@drawable/bg_gradient_bottom_up"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="20dp">
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="16dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSeguimiento"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="0dp"
-            android:layout_height="60dp"
-            android:layout_weight="1"
-            android:text="Historial"
-            android:textAllCaps="false"
-            android:textColor="#2D5A40"
-            android:textSize="12sp"
-            app:icon="@drawable/ic_history"
-            app:iconGravity="top"
-            app:iconSize="20dp"
-            app:iconTint="#2D5A40" />
+        <!-- Primera fila: Riego Rápido y Manual -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnGestionarSensores"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_width="0dp"
-            android:layout_height="60dp"
-            android:layout_weight="1"
-            android:text="Sensores"
-            android:textAllCaps="false"
-            android:textColor="#2D5A40"
-            android:textSize="12sp"
-            app:icon="@drawable/ic_sensor"
-            app:iconGravity="top"
-            app:iconSize="20dp"
-            app:iconTint="#2D5A40" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuickWatering"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="💧 Regar Ahora"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textAllCaps="false"
+                app:backgroundTint="#2D5A40"
+                app:cornerRadius="16dp"
+                app:icon="@drawable/ic_water_drop"
+                app:iconGravity="textStart"
+                app:iconSize="18dp" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnWaterNow"
-            android:layout_width="0dp"
-            android:layout_height="60dp"
-            android:layout_weight="1.8"
-            android:elevation="6dp"
-            android:text="Regar Ahora"
-            android:textColor="@android:color/white"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textAllCaps="false"
-            app:backgroundTint="#2D5A40"
-            app:cornerRadius="20dp"
-            app:icon="@drawable/ic_water_drop"
-            app:iconGravity="textStart"
-            app:iconSize="18dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnManualWatering"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="⏱️ Manual"
+                android:textColor="#2D5A40"
+                android:textSize="13sp"
+                android:textAllCaps="false"
+                app:cornerRadius="16dp"
+                app:strokeColor="#2D5A40"
+                app:strokeWidth="2dp" />
+
+        </LinearLayout>
+
+        <!-- Segunda fila: Programar y Historial Riego -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnScheduleWatering"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="⏰ Programar"
+                android:textColor="#2D5A40"
+                android:textSize="13sp"
+                android:textAllCaps="false"
+                app:cornerRadius="16dp"
+                app:strokeColor="#2D5A40"
+                app:strokeWidth="2dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnWateringHistory"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="📋 Riegos"
+                android:textColor="#2D5A40"
+                android:textSize="13sp"
+                android:textAllCaps="false" />
+
+        </LinearLayout>
+
+        <!-- Tercera fila: Historial y Sensores -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSeguimiento"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="📊 Historial"
+                android:textColor="#2D5A40"
+                android:textSize="13sp"
+                android:textAllCaps="false"
+                app:icon="@drawable/ic_history"
+                app:iconGravity="textStart"
+                app:iconSize="18dp"
+                app:iconTint="#2D5A40" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnGestionarSensores"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="🔧 Sensores"
+                android:textColor="#2D5A40"
+                android:textSize="13sp"
+                android:textAllCaps="false"
+                app:icon="@drawable/ic_sensor"
+                app:iconGravity="textStart"
+                app:iconSize="18dp"
+                app:iconTint="#2D5A40" />
+
+        </LinearLayout>
 
     </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

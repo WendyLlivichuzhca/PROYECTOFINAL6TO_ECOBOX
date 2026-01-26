@@ -5,6 +5,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
@@ -110,6 +112,9 @@ class FamilyManagementActivity : AppCompatActivity() {
                         tvFamilyName.text = family.nombre
                         tvInviteCode.text = family.codigo_invitacion ?: "Sin código"
                         
+                        // Actualizar menú después de saber si es admin
+                        invalidateOptionsMenu()
+                        
                         family.miembros?.let {
                             setupAdapter(it)
                         }
@@ -154,6 +159,61 @@ class FamilyManagementActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@FamilyManagementActivity, "Error al eliminar miembro", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        if (iAmAdmin) {
+            menuInflater.inflate(R.menu.menu_family_management, menu)
+        }
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_delete_family -> {
+                confirmDeleteFamily()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun confirmDeleteFamily() {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+            .setTitle("⚠️ Eliminar Familia")
+            .setMessage("¿Estás seguro de que deseas eliminar esta familia?\n\n" +
+                    "Esta acción es IRREVERSIBLE y eliminará:\n" +
+                    "• Todos los miembros\n" +
+                    "• Todas las plantas asociadas\n" +
+                    "• Todo el historial")
+            .setPositiveButton("Eliminar") { _, _ ->
+                // Segunda confirmación
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                    .setTitle("⚠️ Confirmación Final")
+                    .setMessage("¿Realmente deseas eliminar la familia?\nEsta acción NO se puede deshacer.")
+                    .setPositiveButton("Sí, eliminar") { _, _ -> deleteFamily() }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun deleteFamily() {
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.deleteFamily("Token $authToken", familyId)
+                if (response.isSuccessful) {
+                    Toast.makeText(this@FamilyManagementActivity, "Familia eliminada exitosamente", Toast.LENGTH_SHORT).show()
+                    finish() // Cerrar activity y volver
+                } else {
+                    Toast.makeText(this@FamilyManagementActivity, "Error: ${response.message()}", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e("FamilyManagement", "Error al eliminar familia", e)
+                Toast.makeText(this@FamilyManagementActivity, "Error al eliminar familia", Toast.LENGTH_SHORT).show()
             }
         }
     }

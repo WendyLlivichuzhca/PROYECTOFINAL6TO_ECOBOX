@@ -57,10 +57,15 @@ class PlantDetailActivity : AppCompatActivity() {
     private lateinit var progressWater: ProgressBar
 
     // Controles
-    private lateinit var btnWaterNow: MaterialButton
+    private lateinit var btnQuickWatering: MaterialButton
+    private lateinit var btnManualWatering: MaterialButton
+    private lateinit var btnScheduleWatering: MaterialButton
+    private lateinit var btnWateringHistory: MaterialButton
     private lateinit var btnSeguimiento: MaterialButton
     private lateinit var btnEdit: MaterialButton
     private lateinit var btnDelete: MaterialButton
+    
+    private var authToken: String? = null
 
     // Cards
     private lateinit var cardHumidity: CardView
@@ -128,15 +133,17 @@ class PlantDetailActivity : AppCompatActivity() {
 
         val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
         userId = prefs.getLong("user_id", -1)
+        authToken = prefs.getString("auth_token", null)
 
         if (userId == -1L) {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
             return
         }
-
+        
         initViews()
         setupClickListeners()
+        setupWateringButtons()
         loadPlantData()
     }
 
@@ -153,7 +160,11 @@ class PlantDetailActivity : AppCompatActivity() {
         tvWaterLevelPercent = findViewById(R.id.tvWaterLevelPercent)
         progressWater = findViewById(R.id.progressWater)
 
-        btnWaterNow = findViewById(R.id.btnWaterNow)
+        // Botones de riego
+        btnQuickWatering = findViewById(R.id.btnQuickWatering)
+        btnManualWatering = findViewById(R.id.btnManualWatering)
+        btnScheduleWatering = findViewById(R.id.btnScheduleWatering)
+        btnWateringHistory = findViewById(R.id.btnWateringHistory)
         btnSeguimiento = findViewById(R.id.btnSeguimiento)
         btnEdit = findViewById(R.id.btnEdit)
         btnDelete = findViewById(R.id.btnDelete)
@@ -200,7 +211,7 @@ class PlantDetailActivity : AppCompatActivity() {
     }
 
     private fun setupClickListeners() {
-        btnWaterNow.setOnClickListener {
+        btnQuickWatering.setOnClickListener {
             waterPlantNow()
         }
 
@@ -720,7 +731,7 @@ class PlantDetailActivity : AppCompatActivity() {
         
         lifecycleScope.launch {
             try {
-                btnWaterNow.isEnabled = false
+                btnQuickWatering.isEnabled = false
                 val response = RetrofitClient.instance.activateWatering(
                     "Token $token", 
                     plantaId, 
@@ -733,7 +744,7 @@ class PlantDetailActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 Toast.makeText(this@PlantDetailActivity, "Error al iniciar riego", Toast.LENGTH_SHORT).show()
             } finally {
-                btnWaterNow.isEnabled = true
+                btnQuickWatering.isEnabled = true
             }
         }
     }
@@ -947,6 +958,69 @@ class PlantDetailActivity : AppCompatActivity() {
                 progressDialog.dismiss()
                 Toast.makeText(this@PlantDetailActivity, "❌ Error de red al eliminar", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    private fun setupWateringButtons() {
+        // Riego rápido
+        btnQuickWatering.setOnClickListener {
+            if (authToken == null) {
+                Toast.makeText(this, "Error de sesión", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            val dialog = QuickWateringDialog(
+                this,
+                plantaId,
+                plantaNombre,
+                authToken!!
+            ) {
+                // Recargar datos de la planta después del riego
+                loadPlantData()
+            }
+            dialog.show()
+        }
+
+        // Riego manual
+        btnManualWatering.setOnClickListener {
+            if (authToken == null) {
+                Toast.makeText(this, "Error de sesión", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            val dialog = ManualWateringDialog(
+                this,
+                plantaId,
+                plantaNombre,
+                authToken!!
+            ) {
+                loadPlantData()
+            }
+            dialog.show()
+        }
+
+        // Programar riego
+        btnScheduleWatering.setOnClickListener {
+            if (authToken == null) {
+                Toast.makeText(this, "Error de sesión", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
+            val dialog = ScheduleWateringDialog(
+                this,
+                plantaId,
+                plantaNombre,
+                authToken!!
+            ) {
+                loadPlantData()
+            }
+            dialog.show()
+        }
+
+        // Ver historial de riegos
+        btnWateringHistory.setOnClickListener {
+            val intent = Intent(this, WateringControlActivity::class.java)
+            startActivity(intent)
         }
     }
 

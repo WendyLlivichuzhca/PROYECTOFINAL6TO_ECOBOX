@@ -40,12 +40,6 @@ interface ApiService {
         @Path("plant_id") plantId: Long
     ): Response<WateringPredictionResponse>
 
-    @GET("ai/watering/history/{plant_id}/")
-    suspend fun getWateringHistory(
-        @Header("Authorization") token: String,
-        @Path("plant_id") plantId: Long
-    ): Response<WateringHistoryResponse>
-
     @POST("ai/watering/activate/{plant_id}/")
     suspend fun activateWatering(
         @Header("Authorization") token: String,
@@ -71,6 +65,12 @@ interface ApiService {
         @Body request: Map<String, String>
     ): Response<UserProfileResponse>
 
+    @POST("auth/change-password/")
+    suspend fun changePassword(
+        @Header("Authorization") token: String,
+        @Body request: Map<String, String>
+    ): Response<MessageResponse>
+
     // --- DASHBOARD ---
     @GET("dashboard/")
     suspend fun getDashboardData(@Header("Authorization") token: String): Response<DashboardResponse>
@@ -89,17 +89,50 @@ interface ApiService {
     @GET("familias/")
     suspend fun getFamilies(@Header("Authorization") token: String): Response<List<FamilyResponse>>
 
-    @POST("familias/")
+    @GET("familias/{id}/")
+    suspend fun getFamilyDetail(
+        @Header("Authorization") token: String,
+        @Path("id") familyId: Long
+    ): Response<FamilyResponse>
+
+    @POST("familias/crear_familia/")
     suspend fun createFamily(
         @Header("Authorization") token: String,
         @Body request: Map<String, String>
     ): Response<FamilyResponse>
 
-    @POST("familias/unirse/")
+    @POST("familias/unirse_familia/")
     suspend fun joinFamily(
         @Header("Authorization") token: String,
         @Body request: Map<String, String>
     ): Response<MessageResponse>
+
+    @POST("familias/{id}/agregar_miembro/")
+    suspend fun addFamilyMember(
+        @Header("Authorization") token: String,
+        @Path("id") familyId: Long,
+        @Body request: Map<String, String>
+    ): Response<MessageResponse>
+
+    @POST("familias/{id}/cambiar_rol_miembro/")
+    suspend fun changeMemberRole(
+        @Header("Authorization") token: String,
+        @Path("id") familyId: Long,
+        @Body request: Map<String, Any>
+    ): Response<MessageResponse>
+
+    @POST("familias/{id}/eliminar_miembro/")
+    suspend fun removeFamilyMember(
+        @Header("Authorization") token: String,
+        @Path("id") familyId: Long,
+        @Body request: Map<String, Long>
+    ): Response<MessageResponse>
+
+    @POST("familias/{id}/generar_codigo_invitacion/")
+    suspend fun generateInvitationCode(
+        @Header("Authorization") token: String,
+        @Path("id") familyId: Long
+    ): Response<FamilyResponse>
 
     @DELETE("familias/{family_id}/miembros/{member_id}/")
     suspend fun removeMember(
@@ -114,6 +147,43 @@ interface ApiService {
         @Path("family_id") familyId: Long,
         @Path("member_id") memberId: Long
     ): Response<MessageResponse>
+
+    @DELETE("familias/{id}/")
+    suspend fun deleteFamily(
+        @Header("Authorization") token: String,
+        @Path("id") familyId: Long
+    ): Response<MessageResponse>
+
+    // --- SISTEMA DE RIEGO ---
+    // Usar el endpoint del ViewSet que ya existe
+    @GET("riegos/")
+    suspend fun getWaterings(
+        @Header("Authorization") token: String,
+        @Query("planta") plantId: Long? = null,
+        @Query("estado") estado: String? = null,
+        @Query("tipo") tipo: String? = null
+    ): Response<List<WateringItemResponse>>
+
+    @POST("riegos/")
+    suspend fun createWatering(
+        @Header("Authorization") token: String,
+        @Body request: Map<String, Any>
+    ): Response<WateringItemResponse>
+
+    // Usar el endpoint de AI que ya funciona para riego rápido
+    @POST("ai/watering/activate/{plant_id}/")
+    suspend fun quickWatering(
+        @Header("Authorization") token: String,
+        @Path("plant_id") plantId: Long,
+        @Body request: Map<String, Any>
+    ): Response<WateringCreateResponse>
+
+    // Endpoint de historial de AI que ya funciona
+    @GET("ai/watering/history/{plant_id}/")
+    suspend fun getWateringHistory(
+        @Header("Authorization") token: String,
+        @Path("plant_id") plantId: Long
+    ): Response<WateringHistoryApiResponse>
 
     // --- PLANTAS ---
     @GET("plantas/")
@@ -156,6 +226,8 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") id: Long
     ): Response<PlantStatsResponse>
+
+    // --- ESTADO DE PLANTA ---
 
     @GET("plantas/{id}/estado/")
     suspend fun getPlantState(
@@ -541,22 +613,39 @@ data class UserNotificationResponse(
     val tipo: String,
     val usuario: Long
 )
-data class WateringHistoryResponse(
-    val success: Boolean,
-    val waterings: List<WateringHistoryItem>
+// --- RIEGO ---
+data class WateringResponse(
+    val id: Long,
+    val planta: Long,
+    val duracion: Int,
+    @SerializedName("cantidad_agua")
+    val cantidadAgua: Float,
+    val fecha: String,
+    val tipo: String,  // MANUAL, AUTOMATICO, PROGRAMADO
+    val estado: String,  // PROGRAMADO, EN_CURSO, COMPLETADO, CANCELADO
+    @SerializedName("fecha_programada")
+    val fechaProgramada: String? = null,
+    @SerializedName("humedad_antes")
+    val humedadAntes: Float? = null,
+    @SerializedName("humedad_despues")
+    val humedadDespues: Float? = null
 )
 
-data class WateringHistoryItem(
-    val id: Long,
-    val date: String,
-    val status: String,
-    val duration: Int,
-    @SerializedName("initial_humidity")
-    val initialHumidity: Float?,
-    @SerializedName("final_humidity")
-    val finalHumidity: Float?,
-    val mode: String,
-    val confidence: Float?
+data class WateringStatsResponse(
+    @SerializedName("total_riegos")
+    val totalRiegos: Int,
+    @SerializedName("riegos_hoy")
+    val riegosHoy: Int,
+    @SerializedName("riegos_semana")
+    val riegosSemana: Int,
+    @SerializedName("agua_total_litros")
+    val aguaTotalLitros: Float,
+    @SerializedName("promedio_duracion")
+    val promedioDuracion: Float,
+    @SerializedName("eficiencia")
+    val eficiencia: Float? = null,
+    @SerializedName("ultimo_riego")
+    val ultimoRiego: WateringResponse? = null
 )
 
 data class WateringPredictionResponse(

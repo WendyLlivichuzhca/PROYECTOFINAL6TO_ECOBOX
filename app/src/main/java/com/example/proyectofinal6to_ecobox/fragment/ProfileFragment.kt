@@ -43,6 +43,15 @@ class ProfileFragment : Fragment() {
             cerrarSesion(prefs)
         }
         
+        // Botón de cambiar contraseña
+        view.findViewById<View>(R.id.btnCambiarPassword).setOnClickListener {
+            val dialog = com.example.proyectofinal6to_ecobox.presentacion.ui.ChangePasswordDialog.newInstance()
+            dialog.setOnPasswordChangedListener {
+                Toast.makeText(context, "Contraseña actualizada correctamente", Toast.LENGTH_SHORT).show()
+            }
+            dialog.show(parentFragmentManager, "ChangePasswordDialog")
+        }
+        
         // Botón de ajustes (solo logout por ahora como ejemplo)
         view.findViewById<View>(R.id.btnSettings).setOnClickListener {
             Toast.makeText(context, "Ajustes del sistema", Toast.LENGTH_SHORT).show()
@@ -155,5 +164,11 @@ class ProfileFragment : Fragment() {
         prefs.edit().clear().apply()
         startActivity(Intent(activity, LoginActivity::class.java))
         activity?.finish()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Recargar datos del perfil cuando volvemos al fragment
+        view?.let { cargarDatosDesdeApi(it) }
     }
 }

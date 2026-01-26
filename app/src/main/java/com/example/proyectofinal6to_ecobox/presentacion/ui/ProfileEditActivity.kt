@@ -57,7 +57,12 @@ class ProfileEditActivity : AppCompatActivity() {
         btnSave.setOnClickListener { saveProfile() }
         
         findViewById<MaterialButton>(R.id.btnChangePassword).setOnClickListener {
-            Toast.makeText(this, "Funcionalidad de cambio de clave en desarrollo", Toast.LENGTH_SHORT).show()
+            val dialog = ChangePasswordDialog.newInstance()
+            dialog.setOnPasswordChangedListener {
+                // Opcional: cerrar la actividad después de cambiar contraseña
+                Toast.makeText(this, "Contraseña actualizada", Toast.LENGTH_SHORT).show()
+            }
+            dialog.show(supportFragmentManager, "ChangePasswordDialog")
         }
     }
 
