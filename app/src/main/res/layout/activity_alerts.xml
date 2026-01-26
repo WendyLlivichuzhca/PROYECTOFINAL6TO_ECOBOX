@@ -178,7 +178,32 @@
                 android:nestedScrollingEnabled="false"
                 tools:listitem="@layout/item_alert" />
 
+            <!-- ✅ SPRINT 3: Botón de Prueba -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTestAlerts"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Probar Sistema de Alertas"
+                android:textAllCaps="false"
+                app:cornerRadius="12dp"
+                app:icon="@drawable/ic_notification"
+                app:iconSize="18dp"/>
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+
+    <!-- ✅ SPRINT 2: FAB para Crear Alerta -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabCreateAlert"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="24dp"
+        android:src="@drawable/ic_add"
+        android:contentDescription="Crear alerta manual"
+        app:tint="@color/white"
+        app:backgroundTint="#10B981"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

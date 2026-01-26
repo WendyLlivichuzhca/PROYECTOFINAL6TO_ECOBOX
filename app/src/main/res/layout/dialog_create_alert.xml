@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Título de la Alerta"
+        android:textSize="14sp"
+        android:textColor="#6B7280"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/etAlertTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Ej: Planta necesita atención"
+        android:inputType="text"
+        android:padding="12dp"
+        android:background="@drawable/bg_input"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Mensaje"
+        android:textSize="14sp"
+        android:textColor="#6B7280"
+        android:layout_marginBottom="8dp"/>
+
+    <EditText
+        android:id="@+id/etAlertMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Describe el problema o situación"
+        android:inputType="textMultiLine"
+        android:minLines="3"
+        android:gravity="top"
+        android:padding="12dp"
+        android:background="@drawable/bg_input"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Tipo de Alerta"
+        android:textSize="14sp"
+        android:textColor="#6B7280"
+        android:layout_marginBottom="8dp"/>
+
+    <Spinner
+        android:id="@+id/spinnerAlertType"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:background="@drawable/bg_input"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Planta (Opcional)"
+        android:textSize="14sp"
+        android:textColor="#6B7280"
+        android:layout_marginBottom="8dp"/>
+
+    <Spinner
+        android:id="@+id/spinnerPlant"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:background="@drawable/bg_input"/>
+
+</LinearLayout>

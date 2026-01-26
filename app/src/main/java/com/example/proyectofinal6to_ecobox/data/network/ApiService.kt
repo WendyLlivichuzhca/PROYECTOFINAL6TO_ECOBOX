@@ -332,6 +332,58 @@ interface ApiService {
         @Body request: Map<String, @JvmSuppressWildcards Any>
     ): Response<ChatbotResponse>
 
+    // ✅ SPRINT 2: Chatbot Avanzado
+    @GET("chatbot/contexto/")
+    suspend fun getChatbotContext(
+        @Header("Authorization") token: String
+    ): Response<ChatbotContextResponse>
+
+    @GET("chatbot/plantas/{planta_id}/")
+    suspend fun getChatbotPlantInfo(
+        @Header("Authorization") token: String,
+        @Path("planta_id") plantaId: Long
+    ): Response<ChatbotPlantInfoResponse>
+
+    @GET("chatbot/sugerencias/")
+    suspend fun getChatbotSuggestions(
+        @Header("Authorization") token: String
+    ): Response<ChatbotSuggestionsResponse>
+
+    // ✅ SPRINT 2: Predicciones IA
+    @GET("ai/predict/")
+    suspend fun getAllPredictions(
+        @Header("Authorization") token: String
+    ): Response<AllPredictionsResponse>
+
+    @GET("ai/predict/{plant_id}/")
+    suspend fun getPlantPrediction(
+        @Header("Authorization") token: String,
+        @Path("plant_id") plantId: Long
+    ): Response<PlantPredictionResponse>
+
+    // ✅ SPRINT 2: Crear Alerta Manual
+    @POST("alerts/create/")
+    suspend fun createAlert(
+        @Header("Authorization") token: String,
+        @Body request: Map<String, @JvmSuppressWildcards Any>
+    ): Response<AlertCloud>
+
+    // ✅ SPRINT 3: Métricas y Estado IA
+    @GET("ai/metrics/")
+    suspend fun getAIMetrics(
+        @Header("Authorization") token: String
+    ): Response<AIMetricsResponse>
+
+    @GET("ai/training-status/")
+    suspend fun getTrainingStatus(
+        @Header("Authorization") token: String
+    ): Response<TrainingStatusResponse>
+
+    @POST("alerts/test/")
+    suspend fun testAlertSystem(
+        @Header("Authorization") token: String
+    ): Response<MessageResponse>
+
     // --- NOTIFICACIONES DE USUARIO ---
     @GET("notificaciones/")
     suspend fun getUserNotifications(
@@ -553,12 +605,150 @@ data class PlantEventResponse(
 )
 
 data class PlantHistoryResponse(
-    val resumen: Map<String, Any>,
+    val resumen: HistoryResumen,
     val eventos: List<PlantEventResponse>,
-    val ultimasMediciones: List<Map<String, Any>>,
-    val estadisticas: Map<String, Any>
+    val ultimasMediciones: List<MedicionHistorial>,
+    val estadisticas: EstadisticasHistorial,
+    val sensores: List<SensorInfo>?,
+    val configuracion: ConfiguracionPlanta?,
+    val metadatos: MetadatosHistorial?
 )
 
+data class HistoryResumen(
+    val totalRegistros: Int,
+    val sensoresActivos: Int,
+    val ultimoRegistro: String,
+    val diasMonitoreo: Int,
+    val nombrePlanta: String,
+    val especie: String?,
+    val fecha_plantacion: String?
+)
+
+data class MedicionHistorial(
+    val id: Long,
+    val fecha: String,
+    val tipo_sensor: String,
+    val valor: Float,
+    val unidad: String,
+    val sensor_nombre: String
+)
+
+data class EstadisticasHistorial(
+    val humedad: EstadisticaSensor,
+    val temperatura: EstadisticaSensor,
+    val eventos: EventosStats
+)
+
+data class EstadisticaSensor(
+    val promedio: Float,
+    val maximo: Float,
+    val minimo: Float,
+    val tendencia: String
+)
+
+data class EventosStats(
+    val total: Int,
+    val riegos: Int,
+    val alertas: Int,
+    val ultimaSemana: Int
+)
+
+data class SensorInfo(
+    val id: Long,
+    val nombre: String,
+    val tipo: Int,
+    val activo: Boolean,
+    val ubicacion: String?,
+    val ultima_medicion: Float?
+)
+
+data class ConfiguracionPlanta(
+    val riego_automatico: Boolean,
+    val umbral_humedad: Int,
+    val intervalo_riego: Int
+)
+
+data class MetadatosHistorial(
+    val usuario: String,
+    val fecha_consulta: String,
+    val version: String
+)
+
+// ✅ SPRINT 3: Data Classes Métricas IA (AJUSTADAS AL BACKEND)
+data class AIMetricsResponse(
+    val status: String,
+    val ai_version: String,
+    val modelos_entrenados: String,
+    val modelos_activos: Int,
+    val total_plantas: Int,
+    val eficiencia_global: Float,
+    val mejor_modelo: Float,
+    val ultima_actualizacion: String,
+    val clima_actual: ClimaActual?,
+    val predicciones_hoy: Int,
+    val alertas_activas: Int,
+    val recomendaciones: List<String>,
+    val detalles_modelos: List<DetalleModelo>,
+    val estadisticas: EstadisticasIA,
+    val sistema: SistemaIA
+)
+
+data class ClimaActual(
+    val temperature: Float,
+    val humidity: Int,
+    val description: String,
+    val city: String,
+    val success: Boolean
+)
+
+data class DetalleModelo(
+    val id: Long,
+    val nombre: String,
+    val tipo: String,
+    val accuracy: Float,
+    val planta: PlantaInfo,
+    val ultimo_entrenamiento: String,
+    val muestras: Int,
+    val estado: String
+)
+
+data class PlantaInfo(
+    val id: Long?,
+    val nombre: String
+)
+
+data class EstadisticasIA(
+    val uptime_dias: Int,
+    val predicciones_totales: Int,
+    val accuracy_promedio: String,
+    val plantas_monitoreadas: Int,
+    val sensores_activos: Int,
+    val alertas_activas_lista: List<String>,
+    val riegos_hoy: Int
+)
+
+data class SistemaIA(
+    val plantas_configuradas: Boolean,
+    val modelos_configurados: Boolean,
+    val sensores_activos: Boolean,
+    val base_datos: String
+)
+
+data class TrainingStatusResponse(
+    val active_sessions: List<SesionEntrenamiento>,
+    val total_active: Int,
+    val message: String
+)
+
+data class SesionEntrenamiento(
+    val plant_id: Long,
+    val plant_name: String,
+    val progress: Float,
+    val estimated_time: Int
+)
+
+
+// --- TRACKING RECORDS ---
 data class TrackingRecordResponse(
     val id: Long,
     val planta: Long,
@@ -689,3 +879,56 @@ data class AiStatusResponse(
     val plantasConModelo: Int? = null,
     val sistema: Map<String, Any>? = null
 )
+
+// ✅ SPRINT 2: Data Classes Chatbot Avanzado
+data class ChatbotContextResponse(
+    val usuario: String,
+    val total_plantas: Int,
+    val plantas_criticas: Int,
+    val ultima_actividad: String
+)
+
+data class ChatbotPlantInfoResponse(
+    val nombre: String,
+    val especie: String?,
+    val estado: String,
+    val humedad: Float?,
+    val temperatura: Float?,
+    val ultimo_riego: String?,
+    val recomendaciones: List<String>
+)
+
+data class ChatbotSuggestionsResponse(
+    val sugerencias: List<String>
+)
+
+// ✅ SPRINT 2: Data Classes Predicciones IA
+data class AllPredictionsResponse(
+    val predictions: List<PlantPredictionSummary>,
+    val total: Int,
+    val timestamp: String
+)
+
+data class PlantPredictionSummary(
+    val plant_id: Long,
+    val plant_name: String,
+    val prediction: String,
+    val confidence: Float,
+    val next_action: String
+)
+
+data class PlantPredictionResponse(
+    val plant_id: Long,
+    val plant_name: String,
+    val current_state: Map<String, Any>,
+    val prediction: PredictionDetail,
+    val recommendations: List<String>
+)
+
+data class PredictionDetail(
+    val action: String,
+    val confidence: Float,
+    val reason: String,
+    val expected_outcome: String
+)
+

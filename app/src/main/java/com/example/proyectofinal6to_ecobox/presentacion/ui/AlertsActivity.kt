@@ -14,6 +14,7 @@ import com.example.proyectofinal6to_ecobox.data.adapter.NotificacionesAdapter
 import com.example.proyectofinal6to_ecobox.data.network.*
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 import retrofit2.Response
 
@@ -33,6 +34,8 @@ class AlertsActivity : AppCompatActivity() {
         setContentView(R.layout.activity_alerts)
 
         initViews()
+        setupFAB() // ✅ SPRINT 2
+        setupTestButton() // ✅ SPRINT 3
         loadNotifications()
     }
 
@@ -65,6 +68,58 @@ class AlertsActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.btnFilterAll).setOnClickListener { applyFilter("ALL") }
         findViewById<MaterialButton>(R.id.btnFilterUnread).setOnClickListener { applyFilter("UNREAD") }
         findViewById<MaterialButton>(R.id.btnFilterRead).setOnClickListener { applyFilter("READ") }
+    }
+
+    // ✅ SPRINT 2: Configurar FAB para crear alertas
+    private fun setupFAB() {
+        val fab = findViewById<FloatingActionButton>(R.id.fabCreateAlert)
+        fab?.setOnClickListener {
+            val dialog = CreateAlertDialog.newInstance()
+            dialog.setOnAlertCreatedListener {
+                loadNotifications() // Recargar lista
+            }
+            dialog.show(supportFragmentManager, CreateAlertDialog.TAG)
+        }
+    }
+
+    // ✅ SPRINT 3: Configurar botón de prueba
+    private fun setupTestButton() {
+        val btnTest = findViewById<MaterialButton>(R.id.btnTestAlerts)
+        btnTest?.setOnClickListener {
+            testAlertSystem()
+        }
+    }
+
+    // ✅ SPRINT 3: Probar sistema de alertas
+    private fun testAlertSystem() {
+        val prefs = getSharedPreferences("ecobox_prefs", MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null) ?: return
+
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.testAlertSystem("Token $token")
+                if (response.isSuccessful && response.body() != null) {
+                    Toast.makeText(
+                        this@AlertsActivity,
+                        response.body()!!.message,
+                        Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    Toast.makeText(
+                        this@AlertsActivity,
+                        "Error al probar sistema: ${response.code()}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                Log.e("AlertsActivity", "Error testing alerts", e)
+                Toast.makeText(
+                    this@AlertsActivity,
+                    "Error de conexión",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
     }
 
     private fun loadNotifications() {
