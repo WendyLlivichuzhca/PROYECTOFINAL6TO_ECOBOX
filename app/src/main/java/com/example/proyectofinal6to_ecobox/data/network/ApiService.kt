@@ -315,6 +315,12 @@ interface ApiService {
         @Body request: Map<String, Long> // {"alert_id": id}
     ): Response<MessageResponse>
 
+    @POST("alerts/mark-resolved/")
+    suspend fun markAlertAsResolved(
+        @Header("Authorization") token: String,
+        @Body request: Map<String, Long> // {"alert_id": id}
+    ): Response<MessageResponse>
+
     @GET("chatbot/plantas/")
     suspend fun getChatbotPlants(
         @Header("Authorization") token: String

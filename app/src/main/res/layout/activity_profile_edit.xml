@@ -73,7 +73,80 @@
                     app:backgroundTint="#2D5A40"
                     app:tint="@android:color/white"
                     app:elevation="2dp"/>
+
+                <!-- Botón cambiar color avatar - BRECHA 2 -->
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnChangeAvatarColor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|start"
+                    android:src="@drawable/ic_palette"
+                    app:fabCustomSize="40dp"
+                    app:backgroundTint="#10B981"
+                    app:tint="@android:color/white"
+                    app:elevation="2dp"/>
             </FrameLayout>
+
+            <!-- Estadísticas de Usuario -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mis Estadísticas"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#111827"
+                android:layout_marginBottom="12dp"/>
+
+            <LinearLayout
+                android:id="@+id/layoutProfileStats"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="24dp"
+                android:weightSum="4">
+                
+                <include layout="@layout/item_stat_profile" 
+                    android:id="@+id/statPlantas"/>
+                
+                <include layout="@layout/item_stat_profile"
+                    android:id="@+id/statMediciones"/>
+                
+                <include layout="@layout/item_stat_profile"
+                    android:id="@+id/statRiegos"/>
+                
+                <include layout="@layout/item_stat_profile"
+                    android:id="@+id/statSemanas"/>
+            </LinearLayout>
+
+            <!-- Bio Personalizada - BRECHA 3 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="24dp"
+                android:gravity="center_vertical"
+                android:padding="12dp"
+                android:background="#F9FAFB">
+                
+                <TextView
+                    android:id="@+id/tvUserBio"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🌱 Apasionado/a por las plantas"
+                    android:textSize="14sp"
+                    android:textStyle="italic"
+                    android:textColor="#6B7280"
+                    android:gravity="center"/>
+                
+                <ImageButton
+                    android:id="@+id/btnChangeBio"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:src="@drawable/ic_refresh"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Cambiar bio"/>
+            </LinearLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"

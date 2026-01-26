@@ -362,8 +362,8 @@ object PlantaDao {
                     SELECT 
                         'Riego' as tipo,
                         p.nombrePersonalizado as planta,
-                        r.fecha,
-                        CONCAT('Regado: ', FORMAT(r.cantidad_agua, 1), 'L') as descripcion,
+                        r.fecha_creacion as fecha,
+                        CONCAT('Regado: ', FORMAT(r.cantidad_ml, 1), 'L') as descripcion,
                         1 as icono_tipo
                     FROM riego r
                     INNER JOIN planta p ON r.planta_id = p.id
@@ -421,10 +421,10 @@ object PlantaDao {
                 while (rs.next()) {
                     eventos.add(
                         EventoDAO(
-                            tipo = rs.getString("tipo"),
-                            planta = rs.getString("planta"),
-                            fecha = rs.getString("fecha"),
-                            descripcion = rs.getString("descripcion"),
+                            tipo = rs.getString("tipo") ?: "Evento",
+                            planta = rs.getString("planta") ?: "Desconocida",
+                            fecha = rs.getString("fecha") ?: "",
+                            descripcion = rs.getString("descripcion") ?: "",
                             iconoTipo = rs.getInt("icono_tipo")
                         )
                     )

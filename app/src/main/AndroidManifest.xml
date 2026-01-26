@@ -99,6 +99,7 @@
         <activity
             android:name=".presentacion.ui.PlantDetailActivity"
             android:exported="false" />
+        <activity android:name=".presentacion.ui.AlertStatsActivity" />
         <activity android:name=".presentacion.ui.WateringControlActivity" />
         <activity android:name=".presentacion.ui.AlertsActivity" />
         <activity android:name=".presentacion.ui.AIControlActivity" />
