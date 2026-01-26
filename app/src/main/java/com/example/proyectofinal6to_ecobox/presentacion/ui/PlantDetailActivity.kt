@@ -35,6 +35,7 @@ import com.google.android.material.materialswitch.MaterialSwitch
 import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.lifecycle.lifecycleScope
+import com.example.proyectofinal6to_ecobox.fragment.RealTimeMonitoringFragment
 import com.example.proyectofinal6to_ecobox.data.network.*
 import kotlinx.coroutines.launch
 import java.util.Date
@@ -76,6 +77,7 @@ class PlantDetailActivity : AppCompatActivity() {
     // Gráfico
     private lateinit var chartHistory: LineChart
     private var historialTitle: TextView? = null
+
 
     // Nuevas vistas - Paridad Web
     private lateinit var pbHumidity: ProgressBar
@@ -176,6 +178,7 @@ class PlantDetailActivity : AppCompatActivity() {
 
         chartHistory = findViewById(R.id.chartHistory)
         historialTitle = findViewById(R.id.tvHistoryTitle)
+
         btnGestionarSensores = findViewById(R.id.btnGestionarSensores)
 
         // Vistas de Paridad Web
@@ -719,6 +722,8 @@ class PlantDetailActivity : AppCompatActivity() {
             .show()
     }
 
+
+
     private fun waterPlantNow() {
         // Redirigir al modo manual si se pulsa el botón flotante
         modeToggleGroup.check(R.id.btnModeManual)
@@ -757,12 +762,12 @@ class PlantDetailActivity : AppCompatActivity() {
             try {
                 val response = RetrofitClient.instance.getWateringPrediction("Token $token", plantaId)
                 if (response.isSuccessful && response.body()?.success == true) {
-                    val data = response.body()?.prediction
-                    data?.let {
-                        tvAIPredictionDetail.text = it.reason
-                        tvAIConfidenceDetail.text = "Confianza: ${(it.confidence * 100).toInt()}%"
-                        btnAcceptAI.visibility = if (it.action == "WATER") View.VISIBLE else View.GONE
-                        aiStatusLight.setBackgroundResource(if (it.action == "WATER") R.drawable.bg_circle_blue else R.drawable.bg_circle_light_green)
+                    val predictionData = response.body()?.prediction
+                    predictionData?.let { prediction ->
+                        tvAIPredictionDetail.text = prediction.reason
+                        tvAIConfidenceDetail.text = "Confianza: ${(prediction.confidence * 100).toInt()}%"
+                        btnAcceptAI.visibility = if (prediction.action == "WATER") View.VISIBLE else View.GONE
+                        aiStatusLight.setBackgroundResource(if (prediction.action == "WATER") R.drawable.bg_circle_blue else R.drawable.bg_circle_light_green)
                     }
                 }
             } catch (e: Exception) {

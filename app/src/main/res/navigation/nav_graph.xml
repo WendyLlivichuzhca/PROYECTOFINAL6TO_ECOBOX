@@ -24,9 +24,9 @@
         tools:layout="@layout/fragment_families" />
     <fragment
         android:id="@+id/nav_history"
-        android:name="com.example.proyectofinal6to_ecobox.fragment.HistoryFragment"
-        android:label="Historial"
-        tools:layout="@layout/fragment_history" />
+        android:name="com.example.proyectofinal6to_ecobox.fragment.RealTimeMonitoringFragment"
+        android:label="Monitoreo"
+        tools:layout="@layout/fragment_real_time_monitoring" />
 
     <fragment
         android:id="@+id/nav_alerts"

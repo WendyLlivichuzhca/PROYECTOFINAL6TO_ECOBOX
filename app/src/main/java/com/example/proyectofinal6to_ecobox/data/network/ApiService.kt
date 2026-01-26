@@ -844,22 +844,7 @@ data class WateringStatsResponse(
     val ultimoRiego: WateringResponse? = null
 )
 
-data class WateringPredictionResponse(
-    val success: Boolean,
-    val prediction: WateringPredictionData?,
-    val message: String?
-)
 
-data class WateringPredictionData(
-    val action: String,
-    val confidence: Float,
-    val reason: String,
-    @SerializedName("current_humidity")
-    val currentHumidity: Float,
-    @SerializedName("duration_seconds")
-    val durationSeconds: Int,
-    val timestamp: String
-)
 
 data class AiStatusResponse(
     val status: String,

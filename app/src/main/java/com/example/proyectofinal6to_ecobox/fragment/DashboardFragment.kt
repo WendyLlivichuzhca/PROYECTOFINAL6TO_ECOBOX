@@ -211,40 +211,53 @@ class DashboardFragment : Fragment(R.layout.fragment_dashboard) {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
+                // 1. Obtener lista de plantas DEL USUARIO (Para paridad total y multi-usuario)
+                val plantsResponse = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance.getMyPlants("Token $token")
+                val myPlants = if (plantsResponse.isSuccessful) plantsResponse.body() ?: emptyList() else emptyList()
+                
+                // 2. Obtener datos del Dashboard (Para Gráficos e IA)
                 val response = com.example.proyectofinal6to_ecobox.data.network.RetrofitClient.instance.getDashboardData("Token $token")
+                
+                // --- PROCESAR ESTADÍSTICAS 100% LOCALES ---
+                // Calculamos TODO localmente para que cada usuario vea su realidad (22 o 13 plantas)
+                val totalPlants = myPlants.size
+                // Corregido: El backend envía el estado como String, no como Boolean
+                val criticalPlants = myPlants.count { it.estado_salud == "necesita_agua" }
+                val healthyPlants = totalPlants - criticalPlants
+                
+                // 1. Actualizar Tarjetitas Principales
+                view.findViewById<View>(R.id.cardStatTotal)?.findViewById<TextView>(R.id.tvCount)?.text = totalPlants.toString()
+                view.findViewById<View>(R.id.cardStatHealthy)?.findViewById<TextView>(R.id.tvCount)?.text = healthyPlants.toString()
+                view.findViewById<View>(R.id.cardStatCritical)?.findViewById<TextView>(R.id.tvCount)?.text = criticalPlants.toString()
+
+                // Actualizar Alerta Roja
+                val cardAlertCritical = view.findViewById<View>(R.id.cardAlertCritical)
+                val tvAlertMessage = view.findViewById<TextView>(R.id.tvAlertMessage)
+                if (criticalPlants > 0) {
+                    cardAlertCritical?.visibility = View.VISIBLE
+                    tvAlertMessage?.text = if (criticalPlants == 1) "1 planta necesita riego urgente" else "$criticalPlants plantas necesitan atención"
+                } else {
+                    cardAlertCritical?.visibility = View.GONE
+                }
+
                 if (response.isSuccessful && response.body() != null) {
                     val data = response.body()!!
                     
-                    // 1. Actualizar Estadísticas
-                    view.findViewById<View>(R.id.cardStatTotal)?.findViewById<TextView>(R.id.tvCount)?.text = data.total_plantas.toString()
-                    view.findViewById<View>(R.id.cardStatHealthy)?.findViewById<TextView>(R.id.tvCount)?.text = (data.total_plantas - data.plantas_necesitan_agua).toString()
-                    view.findViewById<View>(R.id.cardStatCritical)?.findViewById<TextView>(R.id.tvCount)?.text = data.plantas_necesitan_agua.toString()
-
-                    val cardAlertCritical = view.findViewById<View>(R.id.cardAlertCritical)
-                    val tvAlertMessage = view.findViewById<TextView>(R.id.tvAlertMessage)
-                    if (data.plantas_necesitan_agua > 0) {
-                        cardAlertCritical?.visibility = View.VISIBLE
-                        tvAlertMessage?.text = if (data.plantas_necesitan_agua == 1) "1 planta necesita riego urgente" else "${data.plantas_necesitan_agua} plantas necesitan atención"
-                    } else {
-                        cardAlertCritical?.visibility = View.GONE
-                    }
-
                     // 2. Actualizar IA Insights
                     val metricas = data.metricas_avanzadas
-                    view.findViewById<TextView>(R.id.tvAiAccuracy)?.text = "96.5%" // Dinámico si el backend lo envía
+                    view.findViewById<TextView>(R.id.tvAiAccuracy)?.text = "96.5%"
                     view.findViewById<TextView>(R.id.tvAiModels)?.text = "${metricas?.get("modelos_ia_activos") ?: 3} Activos"
                     
-                    val recomendacion = if (data.plantas_necesitan_agua > 0) 
-                        "La IA detecta estrés hídrico. Revisa las recomendaciones." 
+                    val recomendacion = if (criticalPlants > 0) 
+                        "La IA detecta estrés hídrico en $criticalPlants plantas. Revisa las recomendaciones." 
                         else "Análisis completado: El ecosistema está en equilibrio óptimo."
                     view.findViewById<TextView>(R.id.tvAiRecommendation)?.text = recomendacion
 
-                    // 3. Actualizar Gráfico si hay datos
+                    // 3. Actualizar Gráfico
                     val chartDashboard = view.findViewById<LineChart>(R.id.chartDashboard)
                     if (chartDashboard != null) {
                         loadChartData(chartDashboard, data.estadisticas_semana)
                     }
-
                 }
             } catch (e: Exception) {
                 Log.e("Dashboard", "Error red dashboard", e)
