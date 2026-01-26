@@ -12,7 +12,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.UsuarioDao
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import android.util.Log

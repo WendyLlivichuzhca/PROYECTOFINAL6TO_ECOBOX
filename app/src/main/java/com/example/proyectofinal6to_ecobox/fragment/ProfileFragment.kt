@@ -10,7 +10,6 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.UsuarioDao
 import com.example.proyectofinal6to_ecobox.presentacion.ui.LoginActivity
 import com.example.proyectofinal6to_ecobox.presentacion.ui.FamilyManagementActivity
 import com.example.proyectofinal6to_ecobox.presentacion.ui.ProfileEditActivity

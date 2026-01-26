@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.adapter.EventsAdapter
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao.EventoDAO
+import com.example.proyectofinal6to_ecobox.data.model.EventoDAO
 import com.example.proyectofinal6to_ecobox.data.network.*
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch

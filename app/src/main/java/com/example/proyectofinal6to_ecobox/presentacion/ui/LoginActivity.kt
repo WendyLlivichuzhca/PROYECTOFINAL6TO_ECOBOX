@@ -20,7 +20,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.airbnb.lottie.LottieAnimationView
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.UsuarioDao
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 

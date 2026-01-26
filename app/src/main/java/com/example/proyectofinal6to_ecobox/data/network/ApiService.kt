@@ -324,7 +324,7 @@ interface ApiService {
     @GET("chatbot/plantas/")
     suspend fun getChatbotPlants(
         @Header("Authorization") token: String
-    ): Response<List<PlantResponse>>
+    ): Response<ChatbotPlantListResponse>
 
     @POST("chatbot/")
     suspend fun postChatbotMessage(
@@ -484,7 +484,7 @@ data class IrrigateResponse(
 )
 
 data class PlantResponse(
-    @SerializedName("idPlanta")
+    @SerializedName("idPlanta", alternate = ["id"])
     val id: Long,
     @SerializedName("nombrePersonalizado")
     val nombre: String,
@@ -787,6 +787,12 @@ data class AlertListResponse(
 data class AlertStatsResponseCloud(
     val status: String,
     val estadisticas: Map<String, Any>
+)
+
+data class ChatbotPlantListResponse(
+    val success: Boolean,
+    val plantas: List<PlantResponse>,
+    val total: Int
 )
 
 // --- CHATBOT ---

@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.lifecycle.lifecycleScope
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
+import com.example.proyectofinal6to_ecobox.data.model.SensorVista
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
@@ -33,7 +33,7 @@ class SensoresActivity : AppCompatActivity() {
     private lateinit var emptyStateView: View
 
     private lateinit var sensorAdapter: SensorAdapter
-    private var sensoresList: MutableList<PlantaDao.SensorVista> = mutableListOf()
+    private var sensoresList: MutableList<SensorVista> = mutableListOf()
 
     private var plantaId: Long = 0
     private var plantaNombre: String = ""
@@ -134,7 +134,7 @@ class SensoresActivity : AppCompatActivity() {
                     // 2. Transformar a SensorVista para mantener compatibilidad con el adapter
                     val sensoresVista = sensors.map { s ->
                         val type = typesMap[s.tipoSensor]
-                        PlantaDao.SensorVista(
+                        SensorVista(
                             id = s.id,
                             nombre = s.nombre,
                             ubicacion = s.ubicacion ?: "Sin ubicación",
@@ -166,7 +166,7 @@ class SensoresActivity : AppCompatActivity() {
         }
     }
 
-    private fun mostrarSensores(sensores: List<PlantaDao.SensorVista>) {
+    private fun mostrarSensores(sensores: List<SensorVista>) {
         sensoresList.clear()
         sensoresList.addAll(sensores)
         sensorAdapter.notifyDataSetChanged()

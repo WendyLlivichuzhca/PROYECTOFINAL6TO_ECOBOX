@@ -141,9 +141,11 @@ class ChatbotBottomSheet : BottomSheetDialogFragment() {
 
         lifecycleScope.launch {
             try {
-                val response: Response<List<PlantResponse>> = RetrofitClient.instance.getChatbotPlants("Token $token")
+                // Cambiamos a getMyPlants ya que chatbot/plantas requiere sesión web y falla en móvil (Redirect 404)
+                val response = RetrofitClient.instance.getMyPlants("Token $token")
                 if (response.isSuccessful && response.body() != null) {
-                    val plants: List<PlantResponse> = response.body()!!
+                    val plants = response.body()!!
+                    
                     plantsList.clear()
                     plantsList.addAll(plants)
                     
@@ -154,6 +156,9 @@ class ChatbotBottomSheet : BottomSheetDialogFragment() {
                     spinnerPlants.adapter = adapterSp
                     
                     tvStatPlants.text = "🌱 ${plants.size} plantas"
+                    Log.d("Chatbot", "✅ ${plants.size} plantas cargadas exitosamente (vía mis_plantas)")
+                } else {
+                    Log.e("Chatbot", "Error API: ${response.code()} ${response.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
                 Log.e("Chatbot", "Error cargando plantas: ${e.message}")

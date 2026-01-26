@@ -8,9 +8,9 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
+import com.example.proyectofinal6to_ecobox.data.model.EventoDAO
 
-class EventsAdapter(private var events: List<PlantaDao.EventoDAO>) :
+class EventsAdapter(private var events: List<EventoDAO>) :
     RecyclerView.Adapter<EventsAdapter.EventViewHolder>() {
 
     class EventViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -57,7 +57,7 @@ class EventsAdapter(private var events: List<PlantaDao.EventoDAO>) :
 
     override fun getItemCount() = events.size
 
-    fun updateData(newEvents: List<PlantaDao.EventoDAO>) {
+    fun updateData(newEvents: List<EventoDAO>) {
         events = newEvents
         notifyDataSetChanged()
     }

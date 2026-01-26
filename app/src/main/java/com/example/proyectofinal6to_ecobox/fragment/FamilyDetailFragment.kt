@@ -15,9 +15,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal6to_ecobox.R
 import com.example.proyectofinal6to_ecobox.data.adapter.MemberAdapter
-import com.example.proyectofinal6to_ecobox.data.dao.FamiliaDao
+import com.example.proyectofinal6to_ecobox.data.model.MiembroUi
+import com.example.proyectofinal6to_ecobox.data.network.RetrofitClient
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import androidx.appcompat.app.AppCompatActivity
 
 class FamilyDetailFragment : Fragment(R.layout.fragment_family_detail) {
 
@@ -100,48 +104,73 @@ class FamilyDetailFragment : Fragment(R.layout.fragment_family_detail) {
     }
 
     private fun cargarDatosFamilia() {
-        Thread {
-            // Obtener datos de la familia
-            val familia = FamiliaDao.obtenerFamiliaPorId(familiaId)
-            val miembros = FamiliaDao.obtenerMiembrosPorFamilia(familiaId)
-            val plantasCount = FamiliaDao.obtenerCantidadPlantasPorFamilia(familiaId)
+        val prefs = requireContext().getSharedPreferences("ecobox_prefs", AppCompatActivity.MODE_PRIVATE)
+        val token = prefs.getString("auth_token", null)
 
-            requireActivity().runOnUiThread {
-                // Actualizar información de la familia
-                familia?.let {
-                    tvFamilyCode.text = "Código: ${it.codigo}"
-                }
+        if (token == null) return
 
-                tvMembersCount.text = "${miembros.size} miembros"
-                tvPlantsCount.text = "$plantasCount plantas"
+        lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.instance.getFamilyDetail("Token $token", familiaId)
 
-                // Actualizar lista de miembros
-                if (miembros.isNotEmpty()) {
-                    rvMembers.adapter = MemberAdapter(miembros)
-                    layoutEmptyState.visibility = View.GONE
-                    rvMembers.visibility = View.VISIBLE
+                if (response.isSuccessful && response.body() != null) {
+                    val familia = response.body()!!
+                    
+                    // Actualizar información de la familia
+                    tvFamilyCode.text = "Código: ${familia.codigo_invitacion ?: "N/A"}"
+                    tvMembersCount.text = "${familia.cantidad_miembros} miembros"
+                    tvPlantsCount.text = "${familia.cantidad_plantas} plantas"
+
+                    // Mapear miembros de la API a MiembroUi
+                    val miembros = familia.miembros?.map { m ->
+                        MiembroUi(
+                            m.usuario_info.id,
+                            m.usuario_info.first_name ?: m.usuario_info.username,
+                            m.usuario_info.email,
+                            if (m.es_administrador) "Administrador" else "Miembro",
+                            m.es_administrador,
+                            "Recientemente",
+                            true,
+                            generarColorAvatar(m.usuario_info.first_name ?: m.usuario_info.username)
+                        )
+                    } ?: emptyList()
+
+                    // Actualizar lista de miembros
+                    if (miembros.isNotEmpty()) {
+                        rvMembers.adapter = MemberAdapter(miembros)
+                        layoutEmptyState.visibility = View.GONE
+                        rvMembers.visibility = View.VISIBLE
+                    } else {
+                        layoutEmptyState.visibility = View.VISIBLE
+                        rvMembers.visibility = View.GONE
+                    }
                 } else {
-                    layoutEmptyState.visibility = View.VISIBLE
-                    rvMembers.visibility = View.GONE
+                    Toast.makeText(requireContext(), "Error al cargar datos", Toast.LENGTH_SHORT).show()
                 }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error de red: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-        }.start()
+        }
+    }
+
+    private fun generarColorAvatar(nombre: String): String {
+        val colors = listOf("#4CAF50", "#2196F3", "#FF9800", "#9C27B0", "#F44336", "#00BCD4", "#795548")
+        val index = Math.abs(nombre.hashCode()) % colors.size
+        return colors[index]
     }
 
     private fun compartirFamilia() {
-        val familia = FamiliaDao.obtenerFamiliaPorId(familiaId)
-        familia?.let {
-            val shareIntent = Intent().apply {
-                action = Intent.ACTION_SEND
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT,
-                    "¡Únete a mi familia en EcoBox!\n" +
-                            "Familia: ${it.nombre}\n" +
-                            "Código: ${it.codigo}\n\n" +
-                            "Descarga la app: [link de tu app]")
-            }
-            startActivity(Intent.createChooser(shareIntent, "Compartir familia"))
+        val shareText = "¡Únete a mi familia en EcoBox!\n" +
+                "Familia: $nombreFamilia\n" +
+                "Código: ${tvFamilyCode.text.toString().replace("Código: ", "")}\n\n" +
+                "Descarga la app: [link de tu app]"
+        
+        val shareIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareText)
         }
+        startActivity(Intent.createChooser(shareIntent, "Compartir familia"))
     }
 
     private fun invitarMiembro() {

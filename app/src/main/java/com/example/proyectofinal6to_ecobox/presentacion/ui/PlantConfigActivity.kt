@@ -7,7 +7,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import com.example.proyectofinal6to_ecobox.R
-import com.example.proyectofinal6to_ecobox.data.dao.PlantaDao
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.RangeSlider
 import com.google.android.material.slider.Slider
