@@ -26,6 +26,11 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import okhttp3.Response as OkResponse
 
 class RealTimeMonitoringFragment : Fragment(R.layout.fragment_real_time_monitoring) {
 
@@ -51,6 +56,8 @@ class RealTimeMonitoringFragment : Fragment(R.layout.fragment_real_time_monitori
     private var authToken: String? = null
     private var autoRefreshJob: Job? = null
     private var isAutoRefreshEnabled = true
+    private var webSocket: WebSocket? = null
+    private val client = OkHttpClient()
 
     companion object {
         fun newInstance(plantId: Long, plantName: String?): RealTimeMonitoringFragment {
@@ -80,7 +87,7 @@ class RealTimeMonitoringFragment : Fragment(R.layout.fragment_real_time_monitori
             scrollPlantSelector.visibility = View.VISIBLE
             loadPlants()
         } else {
-            startAutoRefresh()
+            initWebSocket()
         }
     }
 
@@ -159,23 +166,73 @@ class RealTimeMonitoringFragment : Fragment(R.layout.fragment_real_time_monitori
             if (isAutoRefreshEnabled) {
                 btnAutoRefresh.setImageResource(R.drawable.ic_refresh)
                 btnAutoRefresh.setColorFilter(Color.parseColor("#10B981"))
-                startAutoRefresh()
+                initWebSocket()
             } else {
-                btnAutoRefresh.setImageResource(R.drawable.ic_history) // Usar ic_history como placeholder de "stop"
+                btnAutoRefresh.setImageResource(R.drawable.ic_history)
                 btnAutoRefresh.setColorFilter(Color.parseColor("#6B7280"))
+                closeWebSocket()
                 autoRefreshJob?.cancel()
             }
         }
     }
 
     private fun startAutoRefresh() {
+        if (webSocket != null) return // No necesitamos polling si hay WebSocket activo
+        
         autoRefreshJob?.cancel()
         autoRefreshJob = viewLifecycleOwner.lifecycleScope.launch {
             while (isActive && isAutoRefreshEnabled) {
                 loadMonitoringData()
-                delay(30000) // 30 segundos
+                delay(30000) // 30 segundos como fallback
             }
         }
+    }
+
+    private fun initWebSocket() {
+        if (!isAutoRefreshEnabled) return
+        closeWebSocket()
+
+        val baseUrl = RetrofitClient.instance.toString().substringAfter("at ").substringBeforeLast("/") // Intento de obtener base URL
+        // Usar la base URL de Retrofit pero cambiando http por ws
+        val wsUrl = "ws://10.0.2.2:8000/ws/ai/" // Valor por defecto para emulador
+        // Intentar construir dinámicamente si es posible
+        Log.d("MonitoringWS", "Conectando a $wsUrl")
+        
+        val request = Request.Builder().url(wsUrl).build()
+        webSocket = client.newWebSocket(request, object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: OkResponse) {
+                Log.d("MonitoringWS", "Conexión abierta")
+                requireActivity().runOnUiThread {
+                    tvDataSourceBadge.text = "⚡ REAL-TIME (WS)"
+                    cardDataSource.setCardBackgroundColor(Color.parseColor("#8B5CF6")) // Violeta como en la web
+                }
+                autoRefreshJob?.cancel() // Detener polling si WS funciona
+            }
+
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                Log.d("MonitoringWS", "Mensaje: $text")
+                try {
+                    // Procesar mensaje JSON y actualizar UI
+                    // requireActivity().runOnUiThread { updateUIWithWSData(text) }
+                } catch (e: Exception) {}
+            }
+
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                Log.d("MonitoringWS", "Cerrando: $reason")
+            }
+
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: OkResponse?) {
+                Log.e("MonitoringWS", "Error: ${t.message}")
+                requireActivity().runOnUiThread {
+                    startAutoRefresh() // Fallback a polling si falla WS
+                }
+            }
+        })
+    }
+
+    private fun closeWebSocket() {
+        webSocket?.close(1000, "Cierre normal")
+        webSocket = null
     }
 
     private fun loadMonitoringData() {
@@ -466,6 +523,7 @@ class RealTimeMonitoringFragment : Fragment(R.layout.fragment_real_time_monitori
 
     override fun onDestroyView() {
         super.onDestroyView()
+        closeWebSocket()
         autoRefreshJob?.cancel()
     }
 }

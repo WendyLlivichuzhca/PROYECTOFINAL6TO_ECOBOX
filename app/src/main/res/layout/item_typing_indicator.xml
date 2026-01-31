@@ -5,8 +5,10 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:paddingHorizontal="16dp"
-    android:paddingVertical="8dp">
+    android:paddingVertical="8dp"
+    android:gravity="start">
 
+    <!-- Avatar del bot -->
     <androidx.cardview.widget.CardView
         android:layout_width="40dp"
         android:layout_height="40dp"
@@ -27,29 +29,57 @@
             app:tint="@android:color/white" />
     </androidx.cardview.widget.CardView>
 
+    <!-- Burbuja de mensaje -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tvMessageBot"
+        <androidx.cardview.widget.CardView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:maxWidth="280dp"
-            android:background="@drawable/bg_chat_bubble_bot"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="12dp"
-            android:textColor="#333333"
-            android:lineSpacingExtra="4sp"
-            android:textSize="14sp" />
+            app:cardCornerRadius="18dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@android:color/white">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:gravity="center_vertical">
+
+                <!-- Dot 1 -->
+                <View
+                    android:id="@+id/typingDot1"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="@drawable/bg_typing_dot" />
+
+                <!-- Dot 2 -->
+                <View
+                    android:id="@+id/typingDot2"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="@drawable/bg_typing_dot" />
+
+                <!-- Dot 3 -->
+                <View
+                    android:id="@+id/typingDot3"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:background="@drawable/bg_typing_dot" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
         <TextView
-            android:id="@+id/tvTimestampBot"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="11:51 p. m."
+            android:text="EcoBot está escribiendo..."
             android:textColor="#999999"
             android:textSize="10sp"
             android:layout_marginTop="4dp"

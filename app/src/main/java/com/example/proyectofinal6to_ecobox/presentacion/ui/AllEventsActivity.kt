@@ -22,6 +22,8 @@ class AllEventsActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: EventsAdapter
     private var userId: Long = -1
+    private var allEvents: List<EventoDAO> = emptyList()
+    private lateinit var chipGroup: com.google.android.material.chip.ChipGroup
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +49,20 @@ class AllEventsActivity : AppCompatActivity() {
 
         adapter = EventsAdapter(emptyList())
         recyclerView.adapter = adapter
+
+        chipGroup = findViewById(R.id.filterChipGroup)
+        chipGroup.setOnCheckedChangeListener { group, checkedId ->
+            applyFilter(checkedId)
+        }
+    }
+
+    private fun applyFilter(checkedId: Int) {
+        val filtered = when (checkedId) {
+            R.id.chipLogs -> allEvents.filter { it.tipo == "SISTEMA" || it.tipo == "LOG" || it.iconoTipo == 3 }
+            R.id.chipAlerts -> allEvents.filter { it.tipo == "CRITICA" || it.tipo == "ALERTA" || it.iconoTipo == 2 }
+            else -> allEvents
+        }
+        adapter.updateData(filtered)
     }
 
     private fun loadEventsCloud() {
@@ -76,6 +92,9 @@ class AllEventsActivity : AppCompatActivity() {
                             }
                         )
                     }
+                    
+                    allEvents = events
+                    applyFilter(chipGroup.checkedChipId)
 
                     if (events.isEmpty()) {
                         Toast.makeText(this@AllEventsActivity, "No hay eventos registrados", Toast.LENGTH_SHORT).show()

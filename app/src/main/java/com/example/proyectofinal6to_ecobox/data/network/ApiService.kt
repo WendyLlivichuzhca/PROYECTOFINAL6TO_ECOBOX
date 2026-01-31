@@ -48,7 +48,7 @@ interface ApiService {
     ): Response<IrrigateResponse>
 
     // --- RECOMENDACIONES FEEDBACK ---
-    @POST("ai/recommendations/{id}/feedback/")
+    @POST("ai/{id}/feedback/")
     suspend fun provideAiFeedback(
         @Header("Authorization") token: String,
         @Path("id") predictionId: Long,
@@ -326,11 +326,11 @@ interface ApiService {
         @Header("Authorization") token: String
     ): Response<ChatbotPlantListResponse>
 
-    @POST("chatbot/")
+    @POST("ai/chat/")
     suspend fun postChatbotMessage(
         @Header("Authorization") token: String,
         @Body request: Map<String, @JvmSuppressWildcards Any>
-    ): Response<ChatbotResponse>
+    ): Response<AiChatResponse>
 
     // ✅ SPRINT 2: Chatbot Avanzado
     @GET("chatbot/contexto/")
@@ -432,6 +432,8 @@ data class UserProfileResponse(
     val email: String,
     val username: String?,
     val telefono: String?,
+    @SerializedName("fecha_registro_formatted")
+    val fecha_registro_formatted: String?,
     val estadisticas: Map<String, Any>?
 )
 
@@ -796,6 +798,15 @@ data class ChatbotPlantListResponse(
 )
 
 // --- CHATBOT ---
+data class AiChatResponse(
+    val status: String,
+    val data: AiChatData
+)
+
+data class AiChatData(
+    val text: String
+)
+
 data class ChatbotResponse(
     val success: Boolean,
     val respuesta: ChatbotMessageData

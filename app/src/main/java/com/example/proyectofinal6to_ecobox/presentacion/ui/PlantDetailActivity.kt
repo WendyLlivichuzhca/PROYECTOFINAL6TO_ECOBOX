@@ -95,6 +95,10 @@ class PlantDetailActivity : AppCompatActivity() {
     private lateinit var tvDetailSensors: TextView
     private lateinit var tvDetailFamily: TextView
 
+    private lateinit var btnFeedbackPositive: android.widget.ImageButton
+    private lateinit var btnFeedbackNegative: android.widget.ImageButton
+    private var currentPredictionId: Long? = null
+
     // Datos
     private var planta: Planta? = null
     private var plantaId: Long = -1
@@ -211,6 +215,9 @@ class PlantDetailActivity : AppCompatActivity() {
         switchAutoIrrigate = findViewById(R.id.switchAutoIrrigate)
         listWateringHistory = findViewById(R.id.listWateringHistory)
         tvNoWateringHistory = findViewById(R.id.tvNoWateringHistory)
+
+        btnFeedbackPositive = findViewById(R.id.btnFeedbackPositive)
+        btnFeedbackNegative = findViewById(R.id.btnFeedbackNegative)
     }
 
     private fun setupClickListeners() {
@@ -258,6 +265,14 @@ class PlantDetailActivity : AppCompatActivity() {
 
         switchAutoIrrigate.setOnCheckedChangeListener { _, isChecked ->
             updateAutoIrrigateSetting(isChecked)
+        }
+
+        btnFeedbackPositive.setOnClickListener {
+            provideFeedback("correct")
+        }
+
+        btnFeedbackNegative.setOnClickListener {
+            provideFeedback("incorrect")
         }
     }
 
@@ -779,6 +794,46 @@ class PlantDetailActivity : AppCompatActivity() {
     private fun waterPlantWithAI() {
         // Implementar lógica similar a manual pero modo 'assisted'
         waterPlantManual(180) // Duración estándar o de la predicción
+    }
+
+    private fun provideFeedback(feedbackType: String) {
+        if (authToken == null) return
+        
+        // Si no tenemos un ID de predicción real aún, usamos uno simulado o buscamos el último
+        val predictionId = currentPredictionId ?: 1L // Fallback a 1 para pruebas
+        
+        lifecycleScope.launch {
+            try {
+                // Deshabilitar botones mientras se procesa
+                btnFeedbackPositive.isEnabled = false
+                btnFeedbackNegative.isEnabled = false
+                
+                val response = RetrofitClient.instance.provideAiFeedback(
+                    "Token $authToken",
+                    predictionId,
+                    mapOf("feedback" to feedbackType)
+                )
+                
+                if (response.isSuccessful) {
+                    Toast.makeText(this@PlantDetailActivity, 
+                        if (feedbackType == "correct") "¡Gracias! Seguiremos afinando mis consejos" 
+                        else "Entendido, revisaremos el algoritmo", 
+                        Toast.LENGTH_SHORT).show()
+                    
+                    // Efecto visual de selección
+                    btnFeedbackPositive.alpha = if (feedbackType == "correct") 1.0f else 0.5f
+                    btnFeedbackNegative.alpha = if (feedbackType == "incorrect") 1.0f else 0.5f
+                } else {
+                    Log.e("PlantDetail", "Error feedback: ${response.code()}")
+                    Toast.makeText(this@PlantDetailActivity, "Error al enviar feedback", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e("PlantDetail", "Error red feedback", e)
+            } finally {
+                btnFeedbackPositive.isEnabled = true
+                btnFeedbackNegative.isEnabled = true
+            }
+        }
     }
 
     private fun updateAutoIrrigateSetting(enabled: Boolean) {

@@ -11,7 +11,7 @@ object AppConfig {
     
     // Configuración de Base de Datos
     const val DB_PORT = "3306" // Puerto MySQL
-    const val DB_NAME = "base_ecobox"
+    const val DB_NAME = "ecoboxdb"
     const val DB_USER = "root"
     const val DB_PASSWORD = "1234"
     

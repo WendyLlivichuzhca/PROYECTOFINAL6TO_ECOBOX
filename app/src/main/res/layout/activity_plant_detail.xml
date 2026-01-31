@@ -4,23 +4,22 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAF9"
-    android:fitsSystemWindows="true">
+    android:background="#F3F4F6">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBar"
         android:layout_width="match_parent"
-        android:layout_height="320dp"
-        android:background="#F8FAF9"
-        android:fitsSystemWindows="true"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        android:layout_height="340dp"
+        android:background="@android:color/transparent"
+        android:fitsSystemWindows="true">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:contentScrim="#2D5A40"
+            app:contentScrim="@color/brand_green"
             app:layout_scrollFlags="scroll|exitUntilCollapsed|snap"
-            app:scrimAnimationDuration="300">
+            app:scrimAnimationDuration="300"
+            app:titleEnabled="false">
 
             <ImageView
                 android:id="@+id/ivPlant"
@@ -32,11 +31,11 @@
                 app:layout_collapseMode="parallax"
                 app:layout_collapseParallaxMultiplier="0.7" />
 
+            <!-- Degradado para legibilidad -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/bg_gradient_scrim" />
-
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -44,37 +43,36 @@
                 android:layout_gravity="bottom"
                 android:orientation="vertical"
                 android:paddingHorizontal="24dp"
-                android:paddingBottom="32dp">
+                android:paddingBottom="45dp">
 
                 <TextView
                     android:id="@+id/tvPlantName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:shadowColor="#40000000"
-                    android:shadowDx="0"
-                    android:shadowDy="4"
-                    android:shadowRadius="8"
                     android:text="Pothos Dorado"
                     android:textColor="@android:color/white"
-                    android:textSize="32sp"
-                    android:textStyle="bold" />
+                    android:textSize="34sp"
+                    android:textStyle="bold"
+                    android:shadowColor="#80000000"
+                    android:shadowDx="0"
+                    android:shadowDy="2"
+                    android:shadowRadius="4" />
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:background="@drawable/bg_chip_transparent"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_badge_blue_soft"
                     android:gravity="center_vertical"
                     android:paddingHorizontal="12dp"
-                    android:paddingVertical="6dp">
-
+                    android:paddingVertical="4dp">
                     <TextView
                         android:id="@+id/tvLocation"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="📍 Sala de Estar"
-                        android:textColor="#F3F4F6"
-                        android:textSize="14sp"
+                        android:textColor="#1E40AF"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
@@ -84,57 +82,60 @@
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
                 app:layout_collapseMode="pin"
-                app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+                app:navigationIcon="@drawable/ic_back_arrow"
+                app:navigationIconTint="@color/white" />
 
+            <!-- Botones Flotantes Superiores -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end|top"
-                android:layout_marginTop="72dp"
+                android:layout_marginTop="56dp"
                 android:layout_marginEnd="16dp"
-                android:elevation="12dp"
                 android:orientation="horizontal">
 
-                <com.google.android.material.button.MaterialButton
+                <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnEdit"
-                    style="@style/Widget.MaterialComponents.Button.Icon"
                     android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:layout_marginEnd="8dp"
-                    android:insetLeft="0dp"
-                    android:insetTop="0dp"
-                    android:insetRight="0dp"
-                    android:insetBottom="0dp"
-                    app:backgroundTint="#80000000"
-                    app:cornerRadius="22dp"
-                    app:icon="@drawable/ic_edit"
-                    app:iconGravity="textStart"
-                    app:iconPadding="0dp"
-                    app:iconTint="@android:color/white" />
+                    app:cardCornerRadius="22dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#40000000">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_edit"
+                        app:tint="@color/white"/>
+                </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.button.MaterialButton
+                <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnDelete"
-                    style="@style/Widget.MaterialComponents.Button.Icon"
                     android:layout_width="44dp"
                     android:layout_height="44dp"
-                    android:insetLeft="0dp"
-                    android:insetTop="0dp"
-                    android:insetRight="0dp"
-                    android:insetBottom="0dp"
-                    app:backgroundTint="#80FF5252"
-                    app:cornerRadius="22dp"
-                    app:icon="@drawable/ic_delete"
-                    app:iconGravity="textStart"
-                    app:iconPadding="0dp"
-                    app:iconTint="@android:color/white" />
+                    app:cardCornerRadius="22dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="#80EF4444">
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_delete"
+                        app:tint="@color/white"/>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
+
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="-30dp"
+        android:background="@drawable/bg_card_top_rounded"
         android:clipToPadding="false"
+        android:elevation="41dp"
         android:paddingBottom="120dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
@@ -142,888 +143,249 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingHorizontal="20dp"
+            android:paddingTop="32dp">
 
-            <!-- Sección de Información General (Web Style) -->
+            <!-- 1. BARRA DE INFORMACIÓN RÁPIDA -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="#E5E7EB"
-                app:strokeWidth="1dp">
+                app:cardCornerRadius="24dp"
+                app:cardElevation="1dp"
+                app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="16dp"
+                    android:padding="20dp"
                     android:weightSum="4">
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ASPECTO" android:textSize="10sp" android:textStyle="bold" android:textColor="#6B7280"/>
-                        <TextView android:id="@+id/tvDetailAspect" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Normal" android:textSize="12sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginTop="4dp"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:orientation="vertical">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_leaf" app:tint="#6B7280"/>
+                        <TextView android:id="@+id/tvDetailAspect" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sana" android:textSize="11sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginTop="6dp"/>
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1.2"
-                        android:gravity="center"
-                        android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="FECHA CREACIÓN" android:textSize="10sp" android:textStyle="bold" android:textColor="#6B7280"/>
-                        <TextView android:id="@+id/tvDetailDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="27 Nov 2025" android:textSize="11sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginTop="4dp" android:gravity="center"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.2" android:gravity="center" android:orientation="vertical">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_time" app:tint="#6B7280"/>
+                        <TextView android:id="@+id/tvDetailDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="27 Nov" android:textSize="11sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginTop="6dp"/>
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:gravity="center"
-                        android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SENSORES" android:textSize="10sp" android:textStyle="bold" android:textColor="#6B7280"/>
-                        <TextView android:id="@+id/tvDetailSensors" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2" android:textSize="12sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginTop="4dp"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.9" android:gravity="center" android:orientation="vertical">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_settings" app:tint="#6B7280"/>
+                        <TextView android:id="@+id/tvDetailSensors" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2 Sns" android:textSize="11sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginTop="6dp"/>
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="0.8"
-                        android:gravity="center"
-                        android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="FAMILIA" android:textSize="10sp" android:textStyle="bold" android:textColor="#6B7280"/>
-                        <TextView android:id="@+id/tvDetailFamily" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1" android:textSize="12sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginTop="4dp"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.9" android:gravity="center" android:orientation="vertical">
+                        <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_user_group" app:tint="#6B7280"/>
+                        <TextView android:id="@+id/tvDetailFamily" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1 Fam" android:textSize="11sp" android:textStyle="bold" android:textColor="#111827" android:layout_marginTop="6dp"/>
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <LinearLayout
+            <!-- 2. TARJETAS DE SENSORES EN GRID -->
+            <GridLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:baselineAligned="false"
-                android:orientation="horizontal">
+                android:columnCount="2"
+                android:alignmentMode="alignMargins"
+                android:columnOrderPreserved="false"
+                android:layout_marginBottom="16dp">
 
+                <!-- Humedad -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardHumidity"
-                    style="@style/Widget.MaterialComponents.CardView"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
                     android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="#E5E7EB"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@drawable/ic_water_drop"
-                            app:tint="#2D5A40" />
-
-                        <TextView
-                            android:id="@+id/tvHumidityValue"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="87%"
-                            android:textColor="#111827"
-                            android:textSize="22sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Humedad"
-                            android:textColor="#6B7280"
-                            android:textSize="12sp" />
-
-                        <ProgressBar
-                            android:id="@+id/pbHumidity"
-                            style="?android:attr/progressBarStyleHorizontal"
-                            android:layout_width="match_parent"
-                            android:layout_height="4dp"
-                            android:layout_marginTop="8dp"
-                            android:progress="87"
-                            android:progressDrawable="@drawable/custom_progress_bar_green" />
-
-                        <TextView
-                            android:id="@+id/tvHumidityTarget"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Objetivo: 60%"
-                            android:textColor="#059669"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_water_drop" app:tint="#3B82F6" />
+                        <TextView android:id="@+id/tvHumidityValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="85%" android:textColor="#111827" android:textSize="24sp" android:textStyle="bold" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Humedad" android:textColor="#6B7280" android:textSize="12sp" />
+                        <ProgressBar android:id="@+id/pbHumidity" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="12dp" android:progress="85" android:progressDrawable="@drawable/custom_progress_bar_blue" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- Luz -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardLight"
-                    style="@style/Widget.MaterialComponents.CardView"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="#E5E7EB"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@drawable/ic_sun"
-                            app:tint="#F59E0B" />
-
-                        <TextView
-                            android:id="@+id/tvLightValue"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="71%"
-                            android:textColor="#111827"
-                            android:textSize="22sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Luz Solar"
-                            android:textColor="#6B7280"
-                            android:textSize="12sp" />
-
-                        <ProgressBar
-                            android:id="@+id/pbLight"
-                            style="?android:attr/progressBarStyleHorizontal"
-                            android:layout_width="match_parent"
-                            android:layout_height="4dp"
-                            android:layout_marginTop="8dp"
-                            android:progress="71"
-                            android:progressDrawable="@drawable/custom_progress_bar_yellow" />
-
-                        <TextView
-                            android:id="@+id/tvLightTarget"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Rango: 500-1000"
-                            android:textColor="#D97706"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
+                    android:layout_columnWeight="1"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_sun" app:tint="#F59E0B" />
+                        <TextView android:id="@+id/tvLightValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="72%" android:textColor="#111827" android:textSize="24sp" android:textStyle="bold" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Luz Solar" android:textColor="#6B7280" android:textSize="12sp" />
+                        <ProgressBar android:id="@+id/pbLight" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="12dp" android:progress="72" android:progressDrawable="@drawable/custom_progress_bar_yellow" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
 
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="16dp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:baselineAligned="false"
-                android:orientation="horizontal">
-
+                <!-- Temperatura -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardTemp"
-                    style="@style/Widget.MaterialComponents.CardView"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
                     android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="#E5E7EB"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:src="@drawable/ic_thermometer"
-                            app:tint="#EF4444" />
-
-                        <TextView
-                            android:id="@+id/tvTempValue"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:text="17°C"
-                            android:textColor="#111827"
-                            android:textSize="22sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Temperatura"
-                            android:textColor="#6B7280"
-                            android:textSize="12sp" />
-
-                        <ProgressBar
-                            android:id="@+id/pbTemp"
-                            style="?android:attr/progressBarStyleHorizontal"
-                            android:layout_width="match_parent"
-                            android:layout_height="4dp"
-                            android:layout_marginTop="8dp"
-                            android:progress="60"
-                            android:progressDrawable="@drawable/custom_progress_bar_red" />
-
-                        <TextView
-                            android:id="@+id/tvTempTarget"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Rango: 18-28°C"
-                            android:textColor="#DC2626"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                        <ImageView android:layout_width="24dp" android:layout_height="24dp" android:src="@drawable/ic_thermometer" app:tint="#EF4444" />
+                        <TextView android:id="@+id/tvTempValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="21°C" android:textColor="#111827" android:textSize="24sp" android:textStyle="bold" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Temperatura" android:textColor="#6B7280" android:textSize="12sp" />
+                        <ProgressBar android:id="@+id/pbTemp" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:layout_marginTop="12dp" android:progress="65" android:progressDrawable="@drawable/custom_progress_bar_red" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <!-- Estado Salud -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cardStatus"
-                    style="@style/Widget.MaterialComponents.CardView"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    app:cardBackgroundColor="#ECFDF5"
-                    app:cardCornerRadius="20dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="#D1FAE5"
-                    app:strokeWidth="1dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:gravity="center_vertical"
-                        android:orientation="vertical"
-                        android:padding="16dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:letterSpacing="0.1"
-                            android:text="ESTADO"
-                            android:textColor="#059669"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvStatusText"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Sana 🌿"
-                            android:textColor="#047857"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
+                    android:layout_columnWeight="1"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="1dp"
+                    app:cardBackgroundColor="#ECFDF5">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="20dp" android:gravity="center">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SALUD" android:textSize="10sp" android:textStyle="bold" android:textColor="#059669" android:letterSpacing="0.1" />
+                        <TextView android:id="@+id/tvStatusText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Excelente 🌿" android:textColor="#064E3B" android:textSize="16sp" android:textStyle="bold" android:gravity="center" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
+            </GridLayout>
+
+            <!-- 3. IA PREDICTOR & CONTROL (EL ALMA DE LA APP) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="12dp"
+                android:text="Control Inteligente AI"
+                android:textColor="#111827"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardAIAnalysis"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                app:cardBackgroundColor="#F5F3FF"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
-                app:strokeColor="#DDD6FE"
-                app:strokeWidth="1dp">
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="2dp"
+                app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="24dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:letterSpacing="0.1"
-                            android:text="CONTROL DE RIEGO BASADO EN IA"
-                            android:textColor="#6D28D9"
-                            android:textSize="11sp"
-                            android:textStyle="bold" />
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:src="@drawable/ic_brain"
-                            app:tint="#6D28D9" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tvAIPrediction"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="Se recomienda riego bajo en las próximas horas"
-                        android:textColor="#4C1D95"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:gravity="center_vertical">
-
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            app:cardBackgroundColor="#EDE9FE"
-                            app:cardCornerRadius="16dp"
-                            app:cardElevation="0dp">
-
-                            <TextView
-                                android:id="@+id/tvAIProbability"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:paddingHorizontal="12dp"
-                                android:paddingVertical="4dp"
-                                android:text="Probabilidad de riego: 25%"
-                                android:textColor="#7C3AED"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:layout_marginBottom="16dp">
+                        <com.google.android.material.card.MaterialCardView android:layout_width="40dp" android:layout_height="40dp" app:cardCornerRadius="20dp" app:cardBackgroundColor="#F5F3FF" app:cardElevation="0dp">
+                            <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_gravity="center" android:src="@drawable/ic_brain" app:tint="#8B5CF6"/>
                         </com.google.android.material.card.MaterialCardView>
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:layout_marginBottom="12dp"
-                android:text="Estado del Tanque"
-                android:textColor="#111827"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
-                app:strokeColor="#E5E7EB"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:gravity="center_vertical">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Nivel de Agua"
-                            android:textColor="#374151"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/tvWaterLevelPercent"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="98%"
-                            android:textColor="#3B82F6"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="14dp" android:text="Próximo Riego Predicho" android:textColor="#4B5563" android:textSize="14sp" android:textStyle="bold"/>
                     </LinearLayout>
 
-                    <ProgressBar
-                        android:id="@+id/progressWater"
-                        style="?android:attr/progressBarStyleHorizontal"
-                        android:layout_width="match_parent"
-                        android:layout_height="12dp"
-                        android:progress="98"
-                        android:progressDrawable="@drawable/custom_progress_bar_blue" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                    <TextView android:id="@+id/tvAIPrediction" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Analizando entorno..." android:textColor="#1F2937" android:textSize="16sp" android:textStyle="bold" />
 
-            <!-- SECCIÓN: CONTROL DE RIEGO AVANZADO (PARIDAD WEB) -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:layout_marginBottom="12dp"
-                android:text="Modo de Control"
-                android:textColor="#111827"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:gravity="center_vertical">
+                        <TextView android:id="@+id/tvAIProbability" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Confianza: --%" android:textColor="#7C3AED" android:textSize="12sp" android:textStyle="bold" android:background="@drawable/bg_badge_blue_soft" android:paddingHorizontal="10dp" android:paddingVertical="4dp"/>
+                        <Space android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"/>
+                        <ImageButton android:id="@+id/btnFeedbackPositive" android:layout_width="36dp" android:layout_height="36dp" android:src="@drawable/ic_thumb_up" android:background="?attr/selectableItemBackgroundBorderless" app:tint="#10B981"/>
+                        <ImageButton android:id="@+id/btnFeedbackNegative" android:layout_width="36dp" android:layout_height="36dp" android:src="@drawable/ic_thumb_down" android:layout_marginStart="8dp" android:background="?attr/selectableItemBackgroundBorderless" app:tint="#EF4444"/>
+                    </LinearLayout>
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
-                app:strokeColor="#E5E7EB"
-                app:strokeWidth="1dp">
+                    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F3F4F6" android:layout_marginVertical="24dp"/>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <!-- Selector de Modos -->
+                    <!-- MODO SELECTOR PRESET -->
                     <com.google.android.material.button.MaterialButtonToggleGroup
                         android:id="@+id/modeToggleGroup"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_margin="16dp"
+                        android:layout_height="54dp"
                         app:checkedButton="@+id/btnModeAssisted"
                         app:singleSelection="true">
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnModeManual"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Manual"
-                            android:textSize="12sp"
-                            android:textAllCaps="false"/>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnModeAssisted"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1.2"
-                            android:text="Asistido"
-                            android:textSize="12sp"
-                            android:textAllCaps="false"/>
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnModeAuto"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Auto"
-                            android:textSize="12sp"
-                            android:textAllCaps="false"/>
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnModeManual" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="Manual" android:textSize="12sp" app:cornerRadius="12dp" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnModeAssisted" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="Asistido" android:textSize="12sp" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/btnModeAuto" style="@style/Widget.MaterialComponents.Button.OutlinedButton" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:text="Auto" android:textSize="12sp" />
                     </com.google.android.material.button.MaterialButtonToggleGroup>
 
-                    <!-- Contenedor Dinámico de Modo -->
-                    <LinearLayout
-                        android:id="@+id/modeContentContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:paddingHorizontal="20dp"
-                        android:paddingBottom="20dp">
-
-                        <!-- Contenido Modo MANUAL -->
-                        <LinearLayout
-                            android:id="@+id/layoutManualMode"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:visibility="gone">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Elija la duración del riego:"
-                                android:textColor="#6B7280"
-                                android:textSize="13sp"
-                                android:layout_marginBottom="12dp"/>
-
-                            <HorizontalScrollView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:scrollbars="none">
-                                <LinearLayout
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:orientation="horizontal">
-
-                                    <com.google.android.material.chip.Chip
-                                        android:id="@+id/chip1min"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="1 min"
-                                        app:chipBackgroundColor="#F3F4F6"/>
-
-                                    <com.google.android.material.chip.Chip
-                                        android:id="@+id/chip2min"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="2 min"
-                                        android:layout_marginStart="8dp"
-                                        app:chipBackgroundColor="#F3F4F6"/>
-
-                                    <com.google.android.material.chip.Chip
-                                        android:id="@+id/chip3min"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="3 min"
-                                        android:layout_marginStart="8dp"
-                                        app:chipBackgroundColor="#F3F4F6"/>
-
-                                    <com.google.android.material.chip.Chip
-                                        android:id="@+id/chip5min"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="5 min"
-                                        android:layout_marginStart="8dp"
-                                        app:chipBackgroundColor="#F3F4F6"/>
-                                </LinearLayout>
-                            </HorizontalScrollView>
-                        </LinearLayout>
-
-                        <!-- Contenido Modo ASISTIDO (IA) -->
-                        <LinearLayout
-                            android:id="@+id/layoutAssistedMode"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical">
-
-                            <com.google.android.material.card.MaterialCardView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                app:cardBackgroundColor="#F5F3FF"
-                                app:cardCornerRadius="16dp"
-                                app:cardElevation="0dp"
-                                app:strokeColor="#DDD6FE"
-                                app:strokeWidth="1dp">
-                                
-                                <LinearLayout
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:orientation="vertical"
-                                    android:padding="16dp">
-                                    
-                                    <View
-                                        android:id="@+id/aiStatusLight"
-                                        android:layout_width="8dp"
-                                        android:layout_height="8dp"
-                                        android:layout_gravity="end"
-                                        android:background="@drawable/bg_circle_light_green"/>
-
-                                    <TextView
-                                        android:id="@+id/tvAIPredictionDetail"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:text="Analizando condiciones..."
-                                        android:textColor="#4C1D95"
-                                        android:textSize="14sp"
-                                        android:textStyle="bold"/>
-
-                                    <TextView
-                                        android:id="@+id/tvAIConfidenceDetail"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginTop="4dp"
-                                        android:text="Confianza: --%"
-                                        android:textColor="#7C3AED"
-                                        android:textSize="12sp"/>
-                                    
-                                    <com.google.android.material.button.MaterialButton
-                                        android:id="@+id/btnAcceptAI"
-                                        style="@style/Widget.MaterialComponents.Button"
-                                        android:layout_width="match_parent"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginTop="12dp"
-                                        android:text="Seguir Recomendación"
-                                        android:textAllCaps="false"
-                                        android:textSize="12sp"
-                                        app:cornerRadius="12dp"
-                                        android:backgroundTint="#7C3AED"
-                                        android:visibility="gone"/>
-                                </LinearLayout>
-                            </com.google.android.material.card.MaterialCardView>
-                        </LinearLayout>
-
-                        <!-- Contenido Modo AUTOMÁTICO -->
-                        <LinearLayout
-                            android:id="@+id/layoutAutoMode"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:visibility="gone">
-
-                            <com.google.android.material.materialswitch.MaterialSwitch
-                                android:id="@+id/switchAutoIrrigate"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="Riego Automático Inteligente"
-                                android:textColor="#1F2937"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="El sistema regará basado únicamente en decisiones de la IA."
-                                android:textColor="#6B7280"
-                                android:textSize="12sp"
-                                android:layout_marginTop="4dp"/>
-                        </LinearLayout>
+                    <LinearLayout id="@+id/modeContentContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp" android:orientation="vertical">
+                         <!-- El contenido de los modos se inyecta/gestiona visualmente mediante visibilidad -->
+                         <LinearLayout android:id="@+id/layoutAssistedMode" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                             <com.google.android.material.button.MaterialButton android:id="@+id/btnAcceptAI" android:layout_width="match_parent" android:layout_height="56dp" android:layout_marginTop="8dp" android:text="Ejecutar Riego Recomendado" app:cornerRadius="16dp" android:backgroundTint="#8B5CF6" android:visibility="gone" />
+                         </LinearLayout>
+                         <LinearLayout android:id="@+id/layoutAutoMode" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                             <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/switchAutoIrrigate" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Delegar Control a la IA" android:textStyle="bold" />
+                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- SECCIÓN: HISTORIAL DE RIEGO (Web Style) -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:layout_marginBottom="12dp"
-                android:gravity="center_vertical">
+            <!-- 4. MONITOR DE TANQUE -->
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="32dp" android:layout_marginBottom="12dp" android:text="Reserva de Agua" android:textColor="#111827" android:textSize="18sp" android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Historial de Riegos"
-                    android:textColor="#111827"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvSeeAllWatering"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Ver todo"
-                    android:textColor="#059669"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
-                app:strokeColor="#E5E7EB"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:id="@+id/listWateringHistory"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="8dp">
-
-                    <TextView
-                        android:id="@+id/tvNoWateringHistory"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="24dp"
-                        android:text="Cargando historial..."
-                        android:textAlignment="center"
-                        android:textColor="#9CA3AF" />
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="24dp" app:cardElevation="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="12dp">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nivel del Tanque" android:textColor="#4B5563" android:textSize="14sp" />
+                        <TextView android:id="@+id/tvWaterLevelPercent" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="95%" android:textColor="#3B82F6" android:textSize="16sp" android:textStyle="bold" />
+                    </RelativeLayout>
+                    <ProgressBar android:id="@+id/progressWater" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="12dp" android:progress="95" android:progressDrawable="@drawable/custom_progress_bar_blue" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:id="@+id/tvHistoryTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:layout_marginBottom="12dp"
-                android:text="Monitor (24h)"
-                android:textColor="#111827"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+            <!-- 5. HISTORIAL ANALITICO -->
+            <TextView android:id="@+id/tvHistoryTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="32dp" android:layout_marginBottom="12dp" android:text="Análisis de Humedad (24h)" android:textColor="#111827" android:textSize="18sp" android:textStyle="bold" />
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="280dp"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
-                app:strokeColor="#E5E7EB"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:padding="16dp">
-
-                    <com.github.mikephil.charting.charts.LineChart
-                        android:id="@+id/chartHistory"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent" />
-                </LinearLayout>
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="280dp" android:layout_marginBottom="120dp" app:cardCornerRadius="24dp" app:cardElevation="1dp">
+                <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartHistory" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="16dp" />
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Barra inferior con botones de riego -->
+    <!-- ACCIONES DE RIEGO (FLOTANTE INFERIOR) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="@drawable/bg_gradient_bottom_up"
-        android:orientation="vertical"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="16dp">
+        android:orientation="horizontal"
+        android:padding="20dp">
 
-        <!-- Primera fila: Riego Rápido y Manual -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnQuickWater"
+            android:layout_width="0dp"
+            android:layout_height="58dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="12dp"
+            android:text="Riego Rápido"
+            android:textAllCaps="false"
+            app:cornerRadius="16dp"
+            app:backgroundTint="#3B82F6"
+            app:icon="@drawable/ic_water_drop" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnQuickWatering"
-                android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:text="💧 Regar Ahora"
-                android:textColor="@android:color/white"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textAllCaps="false"
-                app:backgroundTint="#2D5A40"
-                app:cornerRadius="16dp"
-                app:icon="@drawable/ic_water_drop"
-                app:iconGravity="textStart"
-                app:iconSize="18dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnManualWatering"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="⏱️ Manual"
-                android:textColor="#2D5A40"
-                android:textSize="13sp"
-                android:textAllCaps="false"
-                app:cornerRadius="16dp"
-                app:strokeColor="#2D5A40"
-                app:strokeWidth="2dp" />
-
-        </LinearLayout>
-
-        <!-- Segunda fila: Programar y Historial Riego -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal"
-            android:gravity="center">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnScheduleWatering"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:text="⏰ Programar"
-                android:textColor="#2D5A40"
-                android:textSize="13sp"
-                android:textAllCaps="false"
-                app:cornerRadius="16dp"
-                app:strokeColor="#2D5A40"
-                app:strokeWidth="2dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnWateringHistory"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="📋 Riegos"
-                android:textColor="#2D5A40"
-                android:textSize="13sp"
-                android:textAllCaps="false" />
-
-        </LinearLayout>
-
-        <!-- Tercera fila: Historial y Sensores -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal"
-            android:gravity="center">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSeguimiento"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:text="📊 Historial"
-                android:textColor="#2D5A40"
-                android:textSize="13sp"
-                android:textAllCaps="false"
-                app:icon="@drawable/ic_history"
-                app:iconGravity="textStart"
-                app:iconSize="18dp"
-                app:iconTint="#2D5A40" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnGestionarSensores"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="0dp"
-                android:layout_height="56dp"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="🔧 Sensores"
-                android:textColor="#2D5A40"
-                android:textSize="13sp"
-                android:textAllCaps="false"
-                app:icon="@drawable/ic_sensor"
-                app:iconGravity="textStart"
-                app:iconSize="18dp"
-                app:iconTint="#2D5A40" />
-
-        </LinearLayout>
-
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnScheduleWater"
+            android:layout_width="60dp"
+            android:layout_height="58dp"
+            android:insetLeft="0dp" android:insetRight="0dp"
+            app:cornerRadius="16dp"
+            app:backgroundTint="@color/white"
+            app:icon="@drawable/ic_time"
+            app:iconTint="#4B5563"
+            app:iconGravity="center"
+            app:strokeColor="#E5E7EB"
+            app:strokeWidth="1dp" />
+            
     </LinearLayout>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
